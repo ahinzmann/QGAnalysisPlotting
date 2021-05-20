@@ -130,9 +130,9 @@ PLOT_STYLES = dict(
     unfolded_unreg_colour=ROOT.kOrange-3,
     unfolded_marker_size=1.1,
 
-    # alt_gen_colour=ROOT.kOrange-3,
+    alt_gen_colour=ROOT.kOrange-3,
     # alt_gen_colour=ROOT.kViolet+1,
-    alt_gen_colour=qgc.HERWIGPP_QCD_COLOUR,
+    #alt_gen_colour=qgc.HERWIGPP_QCD_COLOUR,
     alt_unfolded_colour=ROOT.kOrange-3,
     alt_unfolded_total_colour=ROOT.kOrange-7,
     alt_reco_colour=ROOT.kViolet+1,
@@ -315,7 +315,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             subplot_type='ratio',
             subplot_title="* / %s" % (self.region['mc_label']),
             # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
-            subplot_limits=(0.5, 2.5) if self.setup.has_data else (0.75, 1.25),
+            subplot_limits=(0, 2.8) if self.setup.has_data else (0.75, 1.25),
         )
         self.unfolder = unfolder
         super().__init__()
@@ -505,6 +505,27 @@ class GenPtBinnedPlotter(BinnedPlotter):
                             marker_size=self.plot_styles['alt_gen_marker_size'],
                             marker_style=self.plot_styles['alt_gen_marker'],
                             leg_draw_opt="LEP" if self.plot_styles['alt_gen_marker_size'] > 0 else "LE")
+        #### HERE IS WHERE ANDREAS ADDED THE THEORY
+        theory_style = dict(label="theory",
+                            line_color=2,
+                            line_width=self.line_width,
+                            line_style=1,
+                            marker_color=2,
+                            marker_size=0,
+                            marker_style=1,
+                            fill_color=0,
+                            fill_style=0,
+                            leg_draw_opt="L")
+        theory_style_legend = dict(label="NLO + NLL'+ NP",
+                            line_color=2,
+                            line_width=self.line_width,
+                            line_style=1,
+                            marker_color=2,
+                            marker_size=0,
+                            marker_style=1,
+                            fill_color=2,
+                            fill_style=3003,
+                            leg_draw_opt="FL")
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
@@ -521,6 +542,42 @@ class GenPtBinnedPlotter(BinnedPlotter):
             for i in range(1, unfolded_hist_bin_total_errors_marker_noerror.GetNbinsX()+1):
                 unfolded_hist_bin_total_errors_marker_noerror.SetBinError(i, 1E-100)
 
+            ### GET THEORY CURVE
+            bins=np.array(unfolded_hist_bin_total_errors.GetXaxis().GetXbins())
+            bins[0]=bins[1]/1.5
+            if not "multiplicity" in self.setup.angle.var.lower():
+              for hist in [mc_gen_hist_bin,alt_mc_gen_hist_bin,unfolded_hist_bin_stat_errors,unfolded_hist_bin_total_errors,unfolded_hist_bin_total_errors_marker_noerror]:
+                hist.SetBins(hist.GetXaxis().GetNbins(),bins)
+            
+            theory_hist_bin = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
+            theory_hist_bin_error = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
+            theory_hist_bin_upper = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
+            theory_hist_bin_lower = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
+            var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
+            		"jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(self.setup.angle.var)+1
+            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+              theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt/to_send_to_CMS/thr_vs_exp_cvt/"
+              theory_file+="data_R"+self.setup.jet_algo[-1]+"/"
+              theory_file+="RSIG_THR_RES_NP_"
+              theory_file+="d"+("1" if "4" in self.setup.jet_algo else "2")+("2" if "groomed" in self.setup.region['name'] else "1")+"-"
+              theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
+              theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+              theory_file+=".dat"
+              print(theory_file)
+              igenbin=0
+              for line in open(theory_file).readlines():
+                if line.count(".")==5:
+                  igenbin+=1
+                  theory_hist_bin.SetBinContent(igenbin, float(line.split("\t")[2]))
+                  theory_hist_bin.SetBinError(igenbin, 1e-100)
+                  theory_hist_bin_error.SetBinContent(igenbin, float(line.split("\t")[2]))
+                  theory_hist_bin_error.SetBinError(igenbin, float(line.split("\t")[3]))
+                  theory_hist_bin_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                  theory_hist_bin_upper.SetBinError(igenbin, 0)
+                  theory_hist_bin_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                  theory_hist_bin_lower.SetBinError(igenbin, 0)
+              assert(igenbin==theory_hist_bin.GetNbinsX())
+            
             data_entries = [
                 Contribution(unfolded_hist_bin_total_errors, **data_total_errors_style),
                 Contribution(unfolded_hist_bin_stat_errors, **data_stat_errors_style),
@@ -534,6 +591,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
 
             this_mc_style = deepcopy(mc_style)
             this_alt_mc_style = deepcopy(alt_mc_style)
+            this_theory_style = deepcopy(theory_style)
+            this_theory_style_legend = deepcopy(theory_style_legend)
 
             # Calculate chi2 between data and MCs if desired
             if do_chi2:
@@ -542,6 +601,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 # stats are chi2, ndof, p
                 mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, mc_gen_hist_bin, ematrix)
                 alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)
+                theory_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, theory_hist_bin_error, ematrix)
                 # print(mc_stats)
                 # print(alt_mc_stats)
                 nbins = sum([1 for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1)
@@ -553,11 +613,14 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 chi2_template = "\n#lower[-0.1]{{(#chi^{{2}} / N_{{bins}} = {chi2:g} / {nbins:d})}}"
                 this_mc_style['label'] += chi2_template.format(chi2=cu.nsf(mc_stats[0], n_sig_fig), nbins=nbins)
                 this_alt_mc_style['label'] += chi2_template.format(chi2=cu.nsf(alt_mc_stats[0], n_sig_fig), nbins=nbins)
+                this_theory_style_legend['label'] += chi2_template.format(chi2=cu.nsf(theory_stats[0], n_sig_fig), nbins=nbins)
 
             mc_entries = [
                 Contribution(mc_gen_hist_bin, subplot=data_no_errors, **this_mc_style),
                 Contribution(alt_mc_gen_hist_bin, subplot=data_no_errors, **this_alt_mc_style),
             ]
+            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+              mc_entries += [Contribution(theory_hist_bin, subplot=data_no_errors, **this_theory_style) ]
 
             entries = [
                 # Draw MC
@@ -571,14 +634,14 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 return
 
             ymin = 0
-            if np.any(cu.th1_to_ndarray(unfolded_hist_bin_total_errors)[0] < 0):
-                ymin = None  # let it do its thing and auto calc ymin
+            #if np.any(cu.th1_to_ndarray(unfolded_hist_bin_total_errors)[0] < 0):
+            #    ymin = None  # let it do its thing and auto calc ymin
             max_rel_err = 0.5 if "multiplicity" in self.setup.angle.var.lower() else -1
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         legend=True,
-                        xlim=qgp.calc_auto_xlim(entries[2:3], max_rel_err=0.5),  # set x lim to where data is non-0
+                        xlim=[bins[0],qgp.calc_auto_xlim(entries[2:3], max_rel_err=0.9)[1]],  # set x lim to where data is non-0 ### ANDREAS changed from 0.5
                         ylim=[ymin, None],
                         **self.pt_bin_plot_args)
 
@@ -588,18 +651,45 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # disable adding objects to legend & drawing - we'll do it manually
             plot.do_legend = False
             plot.legend.SetTextSize(0.03)
-            plot.legend.SetY1(0.6)
+            plot.legend.SetY1(0.7)
             plot.legend.SetX1(0.57)
             plot.legend.SetX2(0.93)
             # plot.legend.SetEntrySeparation(0.005)
-            subplot_draw_opts = "NOSTACK E1"
-            plot.plot("NOSTACK E1", subplot_draw_opts)
+            draw_opts = "NOSTACK E1"
+            plot.plot(draw_opts, draw_opts)
+            #plot.container.SetMinimum(plot.container.GetMinimum()/2.)
+            #plot.set_logy(do_exponent=False)
+            if not "multiplicity" in self.setup.angle.var.lower():
+              plot.set_logx(do_exponent=False)
+            plot.container.SetMinimum(0)
 
+            plot.main_pad.cd()
+            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+              theory_hist_bin_upper.SetFillStyle(3003)
+              theory_hist_bin_upper.SetFillColor(2)
+              theory_hist_bin_upper.SetLineWidth(0)
+              theory_hist_bin_upper.SetMarkerSize(0)
+              theory_hist_bin_upper.Draw("F SAME")
+              theory_hist_bin_lower.SetFillStyle(1001)
+              theory_hist_bin_lower.SetFillColor(10)
+              theory_hist_bin_lower.SetLineWidth(0)
+              theory_hist_bin_lower.SetMarkerSize(0)
+              theory_hist_bin_lower.Draw("F SAME")
+              mc_entries=mc_entries[:-1]+[Contribution(theory_hist_bin_error, subplot=data_no_errors, **this_theory_style_legend) ]
+              ROOT.gStyle.SetNdivisions(510,"Y")
+              data_no_errors.Draw("AXIS SAME")
+              #plot.main_pad.RedrawAxis()
+              plot.container.Draw(draw_opts+" A SAME")
+            graphs=[]
+            for e in plot.contributions:
+              graphs+=[ROOT.TGraphErrors(e.obj)]
+              graphs[-1].Draw("P SAME")
+            
             dummy_graphs = qgp.do_fancy_legend(chain(data_entries[:2], mc_entries), plot, use_splitline=False)
 
             plot.canvas.cd()
             plot.legend.Draw()
-
+	    
             # Create hists for data with error region for ratio
             # Easiest way to get errors right is to do data (with 0 errors)
             # and divide by data (with errors), as if you had MC = data with 0 error
@@ -623,11 +713,27 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # note that we use "same" for all - this is to keep the original axes
             # (we may want to rethink this later?)
             plot.subplot_pad.cd()
+
+            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+              theory_hist_bin_upper_ratio = theory_hist_bin_upper.Clone()
+              theory_hist_bin_upper_ratio.Divide(data_no_errors)
+              theory_hist_bin_upper_ratio.Draw("F SAME")
+              theory_hist_bin_lower_ratio = theory_hist_bin_lower.Clone()
+              theory_hist_bin_lower_ratio.Divide(data_no_errors)
+              theory_hist_bin_lower_ratio.Draw("F SAME")
+              data_stat_ratio.Draw("AXIS SAME")
+
             draw_opt = "E2 SAME"
             data_stat_ratio.Draw(draw_opt)
             data_total_ratio.Draw(draw_opt)
             plot.subplot_line.Draw()
-            plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+            plot.subplot_container.Draw("SAME" + draw_opts)
+            for e in [data_stat_ratio,data_total_ratio]:
+              graphs+=[ROOT.TGraphErrors(e)]
+              graphs[-1].Draw("2P SAME")
+            for e in plot.subplot_contributions:
+              graphs+=[ROOT.TGraphErrors(e)]
+              graphs[-1].Draw("P SAME")
 
             # Add subplot legend
             x_left = 0.25
@@ -5360,7 +5466,7 @@ def main():
 
     # jet_algo = "AK4 PF PUPPI"
     jet_algo = "AK4"
-    if "ak8puppi" in args.source:
+    if "ak8" in args.source:
         # jet_algo = "AK8 PF PUPPI"
         jet_algo = "AK8"
 

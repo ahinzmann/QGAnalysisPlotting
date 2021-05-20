@@ -73,6 +73,53 @@ class MultiFunc(object):
         """If we want to do any sort of styling, need to access the first drawn func"""
         return self.funcs[0]
 
+class MultiHist(object):
+    """Class to handle multiple TH1s, just because THStack can't handle SetLogx
+
+    NOT SOPHISTICATED, JUST A CONTAINER.
+    """
+    def __init__(self):
+        self.funcs = []
+
+    def Add(self, func):
+        self.funcs.append(func)
+        ROOT.SetOwnership(func, False)
+
+    def Draw(self, option=None):
+        """Draw all the TH1s, adjust the axis sizes properly"""
+        # if ROOT.gPad:
+        #     if not ROOT.gPad.IsEditable():
+        #         ROOT.gROOT.MakeDefCanvas()
+        #     if "a" in option.lower():
+        #         ROOT.gPad.Clear()
+        # Draw, and figure out max/min of axes for some auto-ranging
+        #x_low, x_high = ROOT.Double(0), ROOT.Double(0)
+        #x_min, x_max = 999, -999
+        y_min, y_max = 999, -999
+        option = option or ""
+        for i, f in enumerate(self.funcs):
+            if i == 0:
+                f.Draw(option)
+            else:
+                f.Draw(option + "SAME")
+
+        #    f.GetRange(x_low, x_high)
+        #    x_min = x_low if x_low < x_min else x_min
+        #    x_max = x_high if x_high > x_max else x_max
+            y_min = f.GetMinimum(x_low, x_high) if f.GetMinimum(x_low, x_high) < y_min else y_min
+            y_max = f.GetMaximum(x_low, x_high) if f.GetMaximum(x_low, x_high) > y_max else y_max
+        #if x_max < x_min:
+        #    raise Exception("MultiHist: x_min > x_max")
+        if y_max < y_min:
+            raise Exception("MultiHist: y_min > y_max")
+
+        self.funcs[0].GetXaxis().SetRangeUser(x_min * 0.95, x_max * 1.05)
+        self.funcs[0].GetYaxis().SetRangeUser(y_min * 0.95, y_max * 1.05)
+
+    def Mod(self):
+        """If we want to do any sort of styling, need to access the first drawn func"""
+        return self.funcs[0]
+
 
 def grab_obj(file_name, obj_name):
     """Get object names obj_name from ROOT file file_name"""
@@ -230,7 +277,7 @@ class Plot(object):
         contributions : list[Contribution]
             List of Contribution objects.
         what : str, optional
-            Type of thing in contributions: "hist", graph", "function", "both" (=graph+function).
+            Type of thing in contributions: "hist", graph", "function", "both" (=graph+function), 'multihist' (same as hist, but not based on THStack)
         title : None, optional
             Title to put on plot
         xtitle : None, optional
@@ -274,7 +321,7 @@ class Plot(object):
         """
         self.contributions = contributions if contributions else []
         self.contributions_objs = []
-        options = ['hist', 'graph', 'function', 'both']
+        options = ['hist', 'graph', 'function', 'both', 'multihist']
         if what not in options:
             raise ValueError("`what` argument must be one of %s" % options)
         self.plot_what = what
@@ -374,10 +421,14 @@ class Plot(object):
             self.container = ROOT.THStack(ROOT.TUUID().AsString(), "")
             if self.subplot_type:
                 self.subplot_container = ROOT.THStack(ROOT.TUUID().AsString(), "")
+        elif self.plot_what == "multihist":
+            self.container = MultiHist()
+            if self.subplot_type:
+                self.subplot_container = MultiHist()
 
-        if self.container:
+        if self.container and not self.plot_what in ['function','multihist']:
             ROOT.SetOwnership(self.container, False)
-        if self.subplot_container:
+        if self.subplot_container and not self.plot_what in ['function','multihist']:
             ROOT.SetOwnership(self.subplot_container, False)
 
     def _populate_container_and_legend(self):
@@ -392,7 +443,7 @@ class Plot(object):
                     continue
                 # if drawing function, extend range as per user's request
                 if self.do_extend:
-                    if self.plot_what == 'function':
+                    if self.plot_what == 'function' or self.plot_what == 'multihist':
                         contrib.obj.SetRange(self.xlim[0], self.xlim[1])
                     elif self.plot_what == "both":
                         contrib.obj.GetListOfFunctions().At(0).SetRange(self.xlim[0], self.xlim[1])
@@ -585,7 +636,7 @@ class Plot(object):
         self.main_pad.SetLogz(int(state))
 
     def get_modifier(self):
-        if self.plot_what != 'function':
+        if self.plot_what != 'function' and self.plot_what != 'multihist':
             modifier = self.container
         else:
             modifier = self.container.Mod()
@@ -689,7 +740,7 @@ class Plot(object):
         if draw_opts is None:
             if self.plot_what in ["graph", 'both']:
                 draw_opts = "ALP"
-            elif self.plot_what in ['function']:
+            elif self.plot_what in ['function','multihist']:
                 draw_opts = ""
             elif self.plot_what == "hist":
                 draw_opts = "NOSTACK"
