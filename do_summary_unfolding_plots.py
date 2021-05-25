@@ -314,6 +314,7 @@ class SummaryPlotter(object):
         zpj_hist_no_errors = None
         zpj_hist_truth = None
         zpj_hist_alt_truth = None
+        zpj_hist_theory = None
         zpj_hist = None
         zpj_hist_ratio_error = None
         if do_zpj:
@@ -327,7 +328,55 @@ class SummaryPlotter(object):
             if not self.only_yoda_data:
                 zpj_hist_truth = self.data_to_hist(zpj_data['%s_truth' % metric], zpj_data['%s_err_truth' % metric], pt_bins[min_pt_bin_ind:])
                 zpj_hist_alt_truth = self.data_to_hist(zpj_data['%s_alt_truth' % metric], zpj_data['%s_err_alt_truth' % metric], pt_bins[min_pt_bin_ind:])
-
+                #### HERE IS WHERE ANDREAS ADDED THE THEORY
+                ### GET THEORY CURVE
+                zpj_hist_theory = zpj_hist_truth.Clone()
+                zpj_hist_theory = zpj_hist_truth.Clone()
+                zpj_hist_theory_error = zpj_hist_truth.Clone()
+                zpj_hist_theory_upper = zpj_hist_truth.Clone()
+                zpj_hist_theory_lower = zpj_hist_truth.Clone()
+                var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
+            		"jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(angle.var)+1
+                if var_number in [3,4,5,8,9,10]:
+                 angle_output_dir = "%s/%s/%s" % ("/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/trees/unfolded_ak"+jet_algo['label'][-1]+"puppi", region_name, angle.var)
+                 root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
+                 import uproot
+                 uproot_file = uproot.open(root_filename)
+                 unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, region_name, angle.var, pt_bins[min_pt_bin_ind:])
+                 for ibin in range(len(pt_bins[min_pt_bin_ind:])-1):
+                  errors=np.ndarray(1)
+                  areas=np.ndarray(1)
+                  centers=np.ndarray(1)
+                  errors=np.delete(errors,0)
+                  areas=np.delete(areas,0)
+                  centers=np.delete(centers,0)
+                  theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt/to_send_to_CMS/thr_vs_exp_cvt/"
+                  theory_file+="data_R"+jet_algo['label'][-1]+"/"
+                  theory_file+="RSIG_THR_RES_NP_"
+                  theory_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
+                  theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
+                  theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                  theory_file+=".dat"
+                  print(theory_file)
+                  igenbin=0
+                  for line in open(theory_file).readlines():
+                    if line.count(".")==5:
+                      igenbin+=1
+                      width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
+                      errors=np.append(errors,float(line.split("\t")[3])*width)
+                      areas=np.append(areas,float(line.split("\t")[2])*width)
+                      centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
+                  mean = metrics.calc_mean_jax(areas, centers)
+                  err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
+                  zpj_hist_theory.SetBinContent(ibin+1,mean)
+                  zpj_hist_theory.SetBinError(ibin+1,1e-100)
+                  zpj_hist_theory_error.SetBinContent(ibin+1,mean)
+                  zpj_hist_theory_error.SetBinError(ibin+1,err)
+                  zpj_hist_theory_upper.SetBinContent(ibin+1,mean+err)
+                  zpj_hist_theory_upper.SetBinError(ibin+1,0)
+                  zpj_hist_theory_lower.SetBinContent(ibin+1,mean-err)
+                  zpj_hist_theory_lower.SetBinError(ibin+1,0)
+            
             for sample in self.other_samples:
                 key = sample['key']
                 hist = self.data_to_hist(zpj_data['%s_%s' % (metric, key)], zpj_data['%s_err_%s' % (metric, key)], pt_bins[min_pt_bin_ind:])
@@ -442,6 +491,24 @@ class SummaryPlotter(object):
                                  subplot=zpj_hist_no_errors)
                 entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
+                cont_args = dict(label="NLO + NLL'+ NP",
+                                 line_color=2,
+                                 line_width=lw,
+                                 line_style=1,
+                                 marker_color=2,
+                                 marker_style=1,
+                                 marker_size=0,
+                                 fill_color=2,
+                                 fill_style=0,
+                                 leg_draw_opt="L",
+                                 subplot=zpj_hist_no_errors)
+                theory_style_legend = cont_args.copy()
+                theory_style_legend["fill_color"]=2
+                theory_style_legend["fill_style"]=3003
+                theory_style_legend["leg_draw_opt"]="FL"
+                entries.append(Contribution(zpj_hist_theory, **cont_args))
+                dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
 
         # Add other samples: dijet cen
         if do_dijet_cen:
@@ -680,6 +747,26 @@ class SummaryPlotter(object):
         # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.1)
         plot.set_logx(do_more_labels=False)
 
+        plot.main_pad.cd()
+        if do_zpj and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
+          zpj_hist_theory_upper.SetFillStyle(3003)
+          zpj_hist_theory_upper.SetFillColor(2)
+          zpj_hist_theory_upper.SetLineWidth(0)
+          zpj_hist_theory_upper.SetMarkerSize(0)
+          zpj_hist_theory_upper.Draw("F SAME")
+          zpj_hist_theory_lower.SetFillStyle(1001)
+          zpj_hist_theory_lower.SetFillColor(10)
+          zpj_hist_theory_lower.SetLineWidth(0)
+          zpj_hist_theory_lower.SetMarkerSize(0)
+          zpj_hist_theory_lower.Draw("F SAME")
+          ROOT.gStyle.SetNdivisions(510,"Y")
+          zpj_hist_no_errors.Draw("AXIS SAME")
+          plot.container.Draw("NOSTACK E1 A SAME")
+        graphs=[]
+        for e in plot.contributions:
+          graphs+=[ROOT.TGraphErrors(e.obj)]
+          graphs[-1].Draw("P SAME")
+
         # Calculate automatic subplot limits, accounting for the range of values,
         # and allowing for the subplot legend
         if len(plot.subplot_contributions) > 0:
@@ -723,9 +810,20 @@ class SummaryPlotter(object):
             plot.subplot_legend = ROOT.TLegend(0.25, 0.75, 0.65, 0.9)
             plot.subplot_legend.SetFillStyle(0)
             plot.subplot_legend.SetTextSize(0.085)
+            
+            if do_zpj and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
+              zpj_hist_theory_upper_ratio = zpj_hist_theory_upper.Clone()
+              zpj_hist_theory_upper_ratio.Divide(zpj_hist_no_errors)
+              zpj_hist_theory_upper_ratio.Draw("F SAME")
+              zpj_hist_theory_lower_ratio = zpj_hist_theory_lower.Clone()
+              zpj_hist_theory_lower_ratio.Divide(zpj_hist_no_errors)
+              zpj_hist_theory_lower_ratio.Draw("F SAME")
+              zpj_hist_no_errors.Draw("AXIS SAME")
+            
             draw_opt = "E2 SAME"
             if do_dijet_cen:
                 dijet_central_hist_ratio_error.Draw(draw_opt)
+                ratiohist=[dijet_central_hist_ratio_error]
                 # plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Total data uncert%s" % (". (central)" if do_dijet_fwd else "ainty"), "F")
                 plot.subplot_legend.AddEntry(dijet_central_hist_ratio_error, "Total data uncert. (central)" if do_dijet_fwd else qgc.DATA_TOTAL_UNC_STR, "F")
                 if do_dijet_fwd:
@@ -733,20 +831,31 @@ class SummaryPlotter(object):
                     plot.subplot_legend.SetX2(0.8)
             if do_dijet_fwd:
                 dijet_forward_hist_ratio_error.Draw(draw_opt)
+                ratiohist=[dijet_forward_hist_ratio_error]
                 # plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Total data uncert%s" % (". (forward)" if do_dijet_cen else "ainty"), "F")
                 plot.subplot_legend.AddEntry(dijet_forward_hist_ratio_error, "Total data uncert (forward)" if do_dijet_cen else qgc.DATA_TOTAL_UNC_STR, "F")
             if do_zpj:
                 # plot.subplot_legend.AddEntry(zpj_hist_ratio_error, "Total data uncertainty", "F")
+                ratiohist=[zpj_hist_ratio_error]
                 plot.subplot_legend.AddEntry(zpj_hist_ratio_error, qgc.DATA_TOTAL_UNC_STR, "F")
                 zpj_hist_ratio_error.Draw(draw_opt)
             plot.subplot_line.Draw()
             # draw hists after line otherwise ugly overlap
             plot.subplot_container.Draw("SAME" + subplot_draw_opts)
+
+            for e in ratiohist:
+              graphs+=[ROOT.TGraphErrors(e)]
+              graphs[-1].Draw("2P SAME")
+            for e in plot.subplot_contributions:
+              graphs+=[ROOT.TGraphErrors(e)]
+              graphs[-1].Draw("P SAME")
+
             plot.subplot_legend.Draw()
             plot.canvas.cd()
 
         prefix = self._generate_filename_prefix(do_dijet_cen, do_dijet_fwd, do_zpj)
         groomed_str = '_groomed' if do_groomed else ''
+        plot.canvas.Update()
         plot.save("{output_dir}/{prefix}{metric}_vs_pt_{angle_var}{groomed_str}_{algo}{append}.{fmt}"
                     .format(
                         output_dir=output_dir,
@@ -757,6 +866,16 @@ class SummaryPlotter(object):
                         algo=jet_algo['name'],
                         fmt=self.output_fmt,
                         append=self.filename_append))
+        #print("{output_dir}/{prefix}{metric}_vs_pt_{angle_var}{groomed_str}_{algo}{append}.{fmt}"
+        #            .format(
+        #                output_dir=output_dir,
+        #                prefix=prefix,
+        #                metric=metric,
+        #                angle_var=angle.var,
+        #                groomed_str=groomed_str,
+        #                algo=jet_algo['name'],
+        #                fmt=self.output_fmt,
+        #                append=self.filename_append))
 
     def plot_dijet_zpj_means_vs_pt_all(self):
         """Plot mean vs pt for dijet (cen+fwd) & Z+jet on one plot,

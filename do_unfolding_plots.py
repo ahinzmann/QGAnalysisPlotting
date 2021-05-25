@@ -506,7 +506,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                             marker_style=self.plot_styles['alt_gen_marker'],
                             leg_draw_opt="LEP" if self.plot_styles['alt_gen_marker_size'] > 0 else "LE")
         #### HERE IS WHERE ANDREAS ADDED THE THEORY
-        theory_style = dict(label="theory",
+        theory_style = dict(label="NLO + NLL'+ NP",
                             line_color=2,
                             line_width=self.line_width,
                             line_style=1,
@@ -516,16 +516,10 @@ class GenPtBinnedPlotter(BinnedPlotter):
                             fill_color=0,
                             fill_style=0,
                             leg_draw_opt="L")
-        theory_style_legend = dict(label="NLO + NLL'+ NP",
-                            line_color=2,
-                            line_width=self.line_width,
-                            line_style=1,
-                            marker_color=2,
-                            marker_size=0,
-                            marker_style=1,
-                            fill_color=2,
-                            fill_style=3003,
-                            leg_draw_opt="FL")
+        theory_style_legend = theory_style.copy()
+        theory_style_legend["fill_color"]=2
+        theory_style_legend["fill_style"]=3003
+        theory_style_legend["leg_draw_opt"]="FL"
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
             hbc_args = dict(ind=ibin, binning_scheme='generator')
