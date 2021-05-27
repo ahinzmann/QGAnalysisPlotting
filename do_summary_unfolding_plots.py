@@ -350,13 +350,16 @@ class SummaryPlotter(object):
                   errors=np.delete(errors,0)
                   areas=np.delete(areas,0)
                   centers=np.delete(centers,0)
-                  theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt/to_send_to_CMS/thr_vs_exp_cvt/"
-                  theory_file+="data_R"+jet_algo['label'][-1]+"/"
-                  theory_file+="RSIG_THR_RES_NP_"
-                  theory_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
-                  theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
-                  theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
-                  theory_file+=".dat"
+                  print(min_pt_bin_ind, ibin)
+                  for post in ["_fix",""]:
+                    theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    theory_file+="data_R"+jet_algo['label'][-1]+"/"
+                    theory_file+="RSIG_THR_RES_NP_"
+                    theory_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
+                    theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
+                    theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    theory_file+=".dat"
+                    if os.path.exists(theory_file): break
                   print(theory_file)
                   igenbin=0
                   for line in open(theory_file).readlines():
@@ -366,6 +369,7 @@ class SummaryPlotter(object):
                       errors=np.append(errors,float(line.split("\t")[3])*width)
                       areas=np.append(areas,float(line.split("\t")[2])*width)
                       centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
+                      assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
                   mean = metrics.calc_mean_jax(areas, centers)
                   err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
                   zpj_hist_theory.SetBinContent(ibin+1,mean)
@@ -492,23 +496,24 @@ class SummaryPlotter(object):
                 entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-                cont_args = dict(label="NLO + NLL'+ NP",
-                                 line_color=2,
-                                 line_width=lw,
-                                 line_style=1,
-                                 marker_color=2,
-                                 marker_style=1,
-                                 marker_size=0,
-                                 fill_color=2,
-                                 fill_style=0,
-                                 leg_draw_opt="L",
-                                 subplot=zpj_hist_no_errors)
-                theory_style_legend = cont_args.copy()
-                theory_style_legend["fill_color"]=2
-                theory_style_legend["fill_style"]=3003
-                theory_style_legend["leg_draw_opt"]="FL"
-                entries.append(Contribution(zpj_hist_theory, **cont_args))
-                dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
+                if var_number in [3,4,5,8,9,10] and metric != 'delta':
+                  cont_args = dict(label="NLO + NLL'+ NP",
+                                   line_color=ROOT.kRed-9,
+                                   line_width=lw,
+                                   line_style=1,
+                                   marker_color=ROOT.kRed-9,
+                                   marker_style=1,
+                                   marker_size=0,
+                                   fill_color=ROOT.kRed-9,
+                                   fill_style=0,
+                                   leg_draw_opt="L",
+                                   subplot=zpj_hist_no_errors)
+                  theory_style_legend = cont_args.copy()
+                  theory_style_legend["fill_color"]=ROOT.kRed-9
+                  theory_style_legend["fill_style"]=3003
+                  theory_style_legend["leg_draw_opt"]="FL"
+                  entries.append(Contribution(zpj_hist_theory, **cont_args))
+                  dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
 
         # Add other samples: dijet cen
         if do_dijet_cen:
@@ -732,9 +737,9 @@ class SummaryPlotter(object):
         # plot.legend.SetBorderSize(1)
         # plot.legend.SetLineColor(ROOT.kBlack)
 
-        if len(entries) > 8:
-            plot.legend.SetNColumns(3)
-            plot.legend.SetTextSize(0.02)
+        #if len(entries) > 8:
+        #    plot.legend.SetNColumns(3)
+        #    plot.legend.SetTextSize(0.02)
         # plot.legend.SetTextAlign(13)
 
         plot.left_margin = 0.16
@@ -750,7 +755,7 @@ class SummaryPlotter(object):
         plot.main_pad.cd()
         if do_zpj and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
           zpj_hist_theory_upper.SetFillStyle(3003)
-          zpj_hist_theory_upper.SetFillColor(2)
+          zpj_hist_theory_upper.SetFillColor(ROOT.kRed-9)
           zpj_hist_theory_upper.SetLineWidth(0)
           zpj_hist_theory_upper.SetMarkerSize(0)
           zpj_hist_theory_upper.Draw("F SAME")

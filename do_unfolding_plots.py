@@ -507,17 +507,17 @@ class GenPtBinnedPlotter(BinnedPlotter):
                             leg_draw_opt="LEP" if self.plot_styles['alt_gen_marker_size'] > 0 else "LE")
         #### HERE IS WHERE ANDREAS ADDED THE THEORY
         theory_style = dict(label="NLO + NLL'+ NP",
-                            line_color=2,
+                            line_color=ROOT.kRed-9,
                             line_width=self.line_width,
                             line_style=1,
-                            marker_color=2,
+                            marker_color=ROOT.kRed-9,
                             marker_size=0,
                             marker_style=1,
                             fill_color=0,
                             fill_style=0,
                             leg_draw_opt="L")
         theory_style_legend = theory_style.copy()
-        theory_style_legend["fill_color"]=2
+        theory_style_legend["fill_color"]=ROOT.kRed-9
         theory_style_legend["fill_style"]=3003
         theory_style_legend["leg_draw_opt"]="FL"
 
@@ -550,14 +550,16 @@ class GenPtBinnedPlotter(BinnedPlotter):
             var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
             		"jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(self.setup.angle.var)+1
             if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
-              theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt/to_send_to_CMS/thr_vs_exp_cvt/"
-              theory_file+="data_R"+self.setup.jet_algo[-1]+"/"
-              theory_file+="RSIG_THR_RES_NP_"
-              theory_file+="d"+("1" if "4" in self.setup.jet_algo else "2")+("2" if "groomed" in self.setup.region['name'] else "1")+"-"
-              theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
-              theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
-              theory_file+=".dat"
-              print(theory_file)
+              for post in ["_fix",""]:
+                theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                theory_file+="data_R"+self.setup.jet_algo[-1]+"/"
+                theory_file+="RSIG_THR_RES_NP_"
+                theory_file+="d"+("1" if "4" in self.setup.jet_algo else "2")+("2" if "groomed" in self.setup.region['name'] else "1")+"-"
+                theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
+                theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                theory_file+=".dat"
+                if os.path.exists(theory_file): break
+                print(theory_file)
               igenbin=0
               for line in open(theory_file).readlines():
                 if line.count(".")==5:
@@ -660,7 +662,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             plot.main_pad.cd()
             if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
               theory_hist_bin_upper.SetFillStyle(3003)
-              theory_hist_bin_upper.SetFillColor(2)
+              theory_hist_bin_upper.SetFillColor(ROOT.kRed-9)
               theory_hist_bin_upper.SetLineWidth(0)
               theory_hist_bin_upper.SetMarkerSize(0)
               theory_hist_bin_upper.Draw("F SAME")
