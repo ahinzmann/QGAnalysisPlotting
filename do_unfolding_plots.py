@@ -130,9 +130,9 @@ PLOT_STYLES = dict(
     unfolded_unreg_colour=ROOT.kOrange-3,
     unfolded_marker_size=1.1,
 
-    alt_gen_colour=ROOT.kOrange-3,
+    #alt_gen_colour=ROOT.kOrange-3,
     # alt_gen_colour=ROOT.kViolet+1,
-    #alt_gen_colour=qgc.HERWIGPP_QCD_COLOUR,
+    alt_gen_colour=qgc.HERWIGPP_QCD_COLOUR,
     alt_unfolded_colour=ROOT.kOrange-3,
     alt_unfolded_total_colour=ROOT.kOrange-7,
     alt_reco_colour=ROOT.kViolet+1,
@@ -160,18 +160,26 @@ PLOT_STYLES = dict(
 )
 
 
-def calc_chi2_stats(one_hist, other_hist, cov_matrix):
+def calc_chi2_stats(one_hist, other_hist, cov_matrix, theory_uncertainty=False):
     one_vec, one_err = cu.th1_to_ndarray(one_hist, False)
     # print(one_err)
-    other_vec, _ = cu.th1_to_ndarray(other_hist, False)
+    other_vec, other_err = cu.th1_to_ndarray(other_hist, False)
     delta = one_vec - other_vec
     if isinstance(cov_matrix, ROOT.TH2):
-        v, _ = cu.th2_to_ndarray(cov_matrix)
+        v, cov_err = cu.th2_to_ndarray(cov_matrix)
     else:
         v = cov_matrix
     # print("delta:", delta)
     # v = np.diag(np.diag(v))  # turn off correlations
     # print("v:", v)
+    if theory_uncertainty:
+      #print("delta:", delta)
+      #print("v:", v)
+      #print("other_err", other_err)
+      other_err_m = np.diag(np.square(other_err[0]))
+      #print("other_err_m", other_err_m)
+      v = np.add(v, other_err_m)
+      #print("v", v)
     try:
         v_inv = np.linalg.inv(v)
     except np.linalg.LinAlgError:
@@ -567,7 +575,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                   theory_hist_bin.SetBinContent(igenbin, float(line.split("\t")[2]))
                   theory_hist_bin.SetBinError(igenbin, 1e-100)
                   theory_hist_bin_error.SetBinContent(igenbin, float(line.split("\t")[2]))
-                  theory_hist_bin_error.SetBinError(igenbin, float(line.split("\t")[3]))
+                  theory_hist_bin_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
                   theory_hist_bin_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
                   theory_hist_bin_upper.SetBinError(igenbin, 0)
                   theory_hist_bin_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
@@ -597,7 +605,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 # stats are chi2, ndof, p
                 mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, mc_gen_hist_bin, ematrix)
                 alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)
-                theory_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, theory_hist_bin_error, ematrix)
+                theory_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, theory_hist_bin_error, ematrix, True)
                 # print(mc_stats)
                 # print(alt_mc_stats)
                 nbins = sum([1 for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1)
@@ -691,7 +699,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # and divide by data (with errors), as if you had MC = data with 0 error
             data_stat_ratio = data_no_errors.Clone()
             data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
-            data_stat_ratio.SetFillStyle(3245)
+            data_stat_ratio.SetFillStyle(3345)
             data_stat_ratio.SetFillColor(self.plot_styles['unfolded_stat_colour'])
             data_stat_ratio.SetLineWidth(0)
             data_stat_ratio.SetMarkerSize(0)

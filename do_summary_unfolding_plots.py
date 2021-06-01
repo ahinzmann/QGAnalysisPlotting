@@ -89,7 +89,7 @@ COMMON_STYLE_DICT = {
 SAMPLE_STYLE_DICTS = {
     dataframe_yoda_key("Sherpa"): {
         "color": ROOT.kGreen+2,
-        "label": "Sherpa",
+        "label": "Sherpa LO",
         "marker_style": cu.Marker.get('triangleDown', filled=False),
         "marker_size": COMMON_STYLE_DICT['marker_size'] * 1,
     },
@@ -315,6 +315,7 @@ class SummaryPlotter(object):
         zpj_hist_truth = None
         zpj_hist_alt_truth = None
         zpj_hist_theory = None
+        zpj_hist_sherpa = None
         zpj_hist = None
         zpj_hist_ratio_error = None
         if do_zpj:
@@ -331,10 +332,10 @@ class SummaryPlotter(object):
                 #### HERE IS WHERE ANDREAS ADDED THE THEORY
                 ### GET THEORY CURVE
                 zpj_hist_theory = zpj_hist_truth.Clone()
-                zpj_hist_theory = zpj_hist_truth.Clone()
                 zpj_hist_theory_error = zpj_hist_truth.Clone()
                 zpj_hist_theory_upper = zpj_hist_truth.Clone()
                 zpj_hist_theory_lower = zpj_hist_truth.Clone()
+                zpj_hist_sherpa_error = zpj_hist_truth.Clone()
                 var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
             		"jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(angle.var)+1
                 if var_number in [3,4,5,8,9,10]:
@@ -380,6 +381,30 @@ class SummaryPlotter(object):
                   zpj_hist_theory_upper.SetBinError(ibin+1,0)
                   zpj_hist_theory_lower.SetBinContent(ibin+1,mean-err)
                   zpj_hist_theory_lower.SetBinError(ibin+1,0)
+
+                  for post in ["_fix",""]:
+                    sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    sherpa_file+="data_R"+jet_algo['label'][-1]+"/"
+                    sherpa_file+="SIG_SRP_NP_"
+                    sherpa_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
+                    sherpa_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
+                    sherpa_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    sherpa_file+=".dat"
+                    if os.path.exists(sherpa_file): break
+                  print(sherpa_file)
+                  igenbin=0
+                  for line in open(sherpa_file).readlines():
+                    if line.count(".")==5:
+                      igenbin+=1
+                      width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
+                      errors=np.append(errors,float(line.split("\t")[3])*width)
+                      areas=np.append(areas,float(line.split("\t")[2])*width)
+                      centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
+                      assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
+                  mean = metrics.calc_mean_jax(areas, centers)
+                  err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
+                  zpj_hist_sherpa_error.SetBinContent(ibin+1,mean)
+                  zpj_hist_sherpa_error.SetBinError(ibin+1,err)
             
             for sample in self.other_samples:
                 key = sample['key']
@@ -496,25 +521,6 @@ class SummaryPlotter(object):
                 entries.append(Contribution(zpj_hist_alt_truth, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
-                if var_number in [3,4,5,8,9,10] and metric != 'delta':
-                  cont_args = dict(label="NLO + NLL'+ NP",
-                                   line_color=ROOT.kRed-9,
-                                   line_width=lw,
-                                   line_style=1,
-                                   marker_color=ROOT.kRed-9,
-                                   marker_style=1,
-                                   marker_size=0,
-                                   fill_color=ROOT.kRed-9,
-                                   fill_style=0,
-                                   leg_draw_opt="L",
-                                   subplot=zpj_hist_no_errors)
-                  theory_style_legend = cont_args.copy()
-                  theory_style_legend["fill_color"]=ROOT.kRed-9
-                  theory_style_legend["fill_style"]=3003
-                  theory_style_legend["leg_draw_opt"]="FL"
-                  entries.append(Contribution(zpj_hist_theory, **cont_args))
-                  dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
-
         # Add other samples: dijet cen
         if do_dijet_cen:
             marker = cu.Marker(shape='triangleDown')
@@ -575,6 +581,42 @@ class SummaryPlotter(object):
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
+        if not self.only_yoda_data:
+            if do_zpj:
+                if var_number in [3,4,5,8,9,10] and metric != 'delta':
+                  cont_args = dict(label="Sherpa NLO+jet",
+                                   line_color=ROOT.kGray,
+                                   line_width=lw,
+                                   line_style=1,
+                                   marker_color=ROOT.kGray,
+                                   marker_style=27,
+                                   marker_size=m_size,
+                                   fill_color=ROOT.kGray,
+                                   fill_style=0,
+                                   leg_draw_opt="LEP",
+                                   subplot=zpj_hist_no_errors)
+                  if self.is_supplementary:                 
+                    entries.append(Contribution(zpj_hist_sherpa_error, **cont_args))
+                    dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
+                  cont_args = dict(label="NLO + NLL'+ NP",
+                                   line_color=ROOT.kRed-9,
+                                   line_width=lw,
+                                   line_style=1,
+                                   marker_color=ROOT.kRed-9,
+                                   marker_style=1,
+                                   marker_size=0,
+                                   fill_color=ROOT.kRed-9,
+                                   fill_style=0,
+                                   leg_draw_opt="L",
+                                   subplot=zpj_hist_no_errors)
+                  theory_style_legend = cont_args.copy()
+                  theory_style_legend["fill_color"]=ROOT.kRed-9
+                  theory_style_legend["fill_style"]=3003
+                  theory_style_legend["leg_draw_opt"]="FL"
+                  entries.append(Contribution(zpj_hist_theory, **cont_args))
+                  dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
+                  
         # Add data last so it gets drawn ontop
         if metric != 'delta':
             if do_dijet_cen:
@@ -732,7 +774,7 @@ class SummaryPlotter(object):
         if len(entries) < 8:
             plot.legend.SetY1(leg_y2 - (len(entries) * (0.27/6))) # magic good separation
         else:
-            plot.legend.SetY1(leg_y2 - (len(entries) * (0.23/6))) # magic good separation
+            plot.legend.SetY1(leg_y2 - (len(entries) * (0.20/6))) # magic good separation
 
         # plot.legend.SetBorderSize(1)
         # plot.legend.SetLineColor(ROOT.kBlack)

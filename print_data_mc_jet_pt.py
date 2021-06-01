@@ -111,7 +111,7 @@ def do_jet_pt_plot(entries,
         # we'll do the filling of legend ourselves
         plot.do_legend = False
 
-    draw_opt = "NOSTACK E HIST E"
+    draw_opt = "NOSTACK L E"
     plot.plot(draw_opt)
 
     # avoid x title hitting labels
@@ -119,6 +119,8 @@ def do_jet_pt_plot(entries,
 
     plot.set_logx(do_more_labels=True, do_exponent=False)
     plot.set_logy(do_more_labels=False)
+
+    graphs=[]
 
     # Special case if data first object
     if data_first:
@@ -129,6 +131,10 @@ def do_jet_pt_plot(entries,
         plot.main_pad.cd()
         data_draw_opt = "E1 X0 SAME"
         data_hist.Draw(data_draw_opt)
+
+        for e in [p.obj for p in plot.contributions[1:]]+[data_hist]:
+           graphs+=[ROOT.TGraphErrors(e)]
+           graphs[-1].Draw("P SAME")
 
         # Create dummy graphs with the same styling to put into the legend
         # Using graphs we can get the correct endings on the TLegend entries (!)
@@ -142,7 +148,7 @@ def do_jet_pt_plot(entries,
             # check if line_width > 0?
             if i == 0:
                 if "X0" in data_draw_opt:
-                    leg_draw_opt = "E"
+                    leg_draw_opt = "LE"
                 if data_hist.GetMarkerSize() > 0:
                     leg_draw_opt += "P"
             # make Contribution just to ease styling methods
@@ -171,7 +177,7 @@ def do_jet_pt_plot(entries,
         data_total_ratio = data_no_errors.Clone()
         # compare_bins(data_total_ratio, entries[0][0])
         data_total_ratio.Divide(entries[0][0])
-        data_total_ratio.SetFillStyle(3254)
+        data_total_ratio.SetFillStyle(3354)
         # data_total_ratio.SetFillStyle(3002)
         data_total_ratio.SetFillColor(entries[0][1]['fill_color'])
         data_total_ratio.SetLineWidth(0)
@@ -236,6 +242,13 @@ def do_jet_pt_plot(entries,
         plot.subplot_container.Draw("SAME " + draw_opt)
         plot.subplot_line.Draw()
 
+        for e in plot.subplot_contributions:
+           graphs+=[ROOT.TGraphErrors(e)]
+           graphs[-1].Draw("E SAME")
+        for e in [data_total_ratio]:
+           graphs+=[ROOT.TGraphErrors(e)]
+           graphs[-1].Draw("E2 SAME ][")
+
         if total_syst and not any([experimental_syst, scale_syst, pdf_syst]):
             plot.subplot_leg.SetTextSize(0.085)
 
@@ -252,6 +265,7 @@ def do_jet_pt_plot(entries,
 
         plot.canvas.cd()
 
+    print(output_filename)
     plot.save(output_filename)
 
 
@@ -622,8 +636,8 @@ def do_dijet_pt_plots(workdir,
             # DATA
             [
                 data_hist,
-                dict(line_color=qgc.JETHT_COLOUR, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
-                     marker_color=qgc.JETHT_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
+                dict(line_color=ROOT.kBlack, line_width=data_line_width, fill_color=qgc.JETHT_COLOUR,
+                     marker_color=ROOT.kBlack, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
                      label="Data",
                      subplot=None if subplot_vs_data else ref_hist)
             ],
@@ -1147,8 +1161,8 @@ def do_zpj_pt_plots(workdir,
         # SINGLE MU DATA
         [
             data_hist,
-            dict(line_color=qgc.SINGLE_MU_COLOUR, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
-                 marker_color=qgc.SINGLE_MU_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
+            dict(line_color=ROOT.kBlack, line_width=data_line_width, fill_color=qgc.SINGLE_MU_COLOUR,
+                 marker_color=ROOT.kBlack, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=msize*0.7,
                  label="Data",
                  subplot=None if subplot_vs_data else ref_hist)
         ],
