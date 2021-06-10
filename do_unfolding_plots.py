@@ -323,7 +323,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             subplot_type='ratio',
             subplot_title="* / %s" % (self.region['mc_label']),
             # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
-            subplot_limits=(0, 2.8) if self.setup.has_data else (0.75, 1.25),
+            subplot_limits=(0, 2.9)
         )
         self.unfolder = unfolder
         super().__init__()
@@ -496,7 +496,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                                       marker_color=self.plot_styles['unfolded_stat_colour'],
                                       marker_style=cu.Marker.get('circle'),
                                       marker_size=0.0001,
-                                      leg_draw_opt="LEP")  # you need a non-0 marker to get the horizontal bars at the end of errors
+                                      leg_draw_opt="EP")  # you need a non-0 marker to get the horizontal bars at the end of errors
 
         mc_style = dict(label=self.region['mc_label'],
                         line_color=self.plot_styles['gen_colour'],
@@ -526,7 +526,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                             leg_draw_opt="L")
         theory_style_legend = theory_style.copy()
         theory_style_legend["fill_color"]=ROOT.kRed-9
-        theory_style_legend["fill_style"]=3003
+        theory_style_legend["fill_style"]=3395
         theory_style_legend["leg_draw_opt"]="FL"
 
         for ibin, (bin_edge_low, bin_edge_high) in enumerate(zip(self.bins[:-1], self.bins[1:])):
@@ -659,7 +659,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             plot.legend.SetX1(0.57)
             plot.legend.SetX2(0.93)
             # plot.legend.SetEntrySeparation(0.005)
-            draw_opts = "NOSTACK E1"
+            draw_opts = "NOSTACK E1 X0"
             plot.plot(draw_opts, draw_opts)
             #plot.container.SetMinimum(plot.container.GetMinimum()/2.)
             #plot.set_logy(do_exponent=False)
@@ -669,7 +669,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
 
             plot.main_pad.cd()
             if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
-              theory_hist_bin_upper.SetFillStyle(3003)
+              theory_hist_bin_upper.SetFillStyle(3395)
               theory_hist_bin_upper.SetFillColor(ROOT.kRed-9)
               theory_hist_bin_upper.SetLineWidth(0)
               theory_hist_bin_upper.SetMarkerSize(0)
@@ -687,7 +687,12 @@ class GenPtBinnedPlotter(BinnedPlotter):
             graphs=[]
             for e in plot.contributions:
               graphs+=[ROOT.TGraphErrors(e.obj)]
-              graphs[-1].Draw("P SAME")
+              graphs[-1].Draw("PZ SAME")
+            for e in plot.contributions:
+              graphs+=[ROOT.TGraphErrors(e.obj)]
+              for p in range(graphs[-1].GetN()):
+                graphs[-1].SetPointError(p,0,graphs[-1].GetErrorY(p))
+              graphs[-1].Draw("E1 SAME")
             
             dummy_graphs = qgp.do_fancy_legend(chain(data_entries[:2], mc_entries), plot, use_splitline=False)
 
@@ -699,15 +704,15 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # and divide by data (with errors), as if you had MC = data with 0 error
             data_stat_ratio = data_no_errors.Clone()
             data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
-            data_stat_ratio.SetFillStyle(3345)
+            data_stat_ratio.SetFillStyle(3545)
             data_stat_ratio.SetFillColor(self.plot_styles['unfolded_stat_colour'])
             data_stat_ratio.SetLineWidth(0)
             data_stat_ratio.SetMarkerSize(0)
 
             data_total_ratio = data_no_errors.Clone()
             data_total_ratio.Divide(unfolded_hist_bin_total_errors)
-            data_total_ratio.SetFillStyle(3254)
-            data_total_ratio.SetFillColor(self.plot_styles['unfolded_total_colour'])
+            data_total_ratio.SetFillStyle(3354)
+            data_total_ratio.SetFillColor(16)
             data_total_ratio.SetLineWidth(0)
             data_total_ratio.SetMarkerSize(0)
 
@@ -725,7 +730,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
               theory_hist_bin_lower_ratio = theory_hist_bin_lower.Clone()
               theory_hist_bin_lower_ratio.Divide(data_no_errors)
               theory_hist_bin_lower_ratio.Draw("F SAME")
-              data_stat_ratio.Draw("AXIS SAME")
+              plot.subplot_pad.RedrawAxis()
+              #data_stat_ratio.Draw("AXIS SAME")
 
             draw_opt = "E2 SAME"
             data_stat_ratio.Draw(draw_opt)
@@ -737,12 +743,17 @@ class GenPtBinnedPlotter(BinnedPlotter):
               graphs[-1].Draw("2P SAME")
             for e in plot.subplot_contributions:
               graphs+=[ROOT.TGraphErrors(e)]
-              graphs[-1].Draw("P SAME")
+              graphs[-1].Draw("PZ SAME")
+            for e in plot.subplot_contributions:
+              graphs+=[ROOT.TGraphErrors(e)]
+              for p in range(graphs[-1].GetN()):
+                graphs[-1].SetPointError(p,0,graphs[-1].GetErrorY(p))
+              graphs[-1].Draw("E1 SAME")
 
             # Add subplot legend
             x_left = 0.25
-            y_bottom = 0.75
-            width = 0.67
+            y_bottom = 0.78
+            width = 0.60
             height = 0.15
             plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
             # plot.subplot_legend = ROOT.TLegend(width, height, width, height)  # automatic placement doesn't work
@@ -1897,7 +1908,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              label="Total uncertainty",
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=0, line_style=2,
                              marker_color=self.plot_styles['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
-                             fill_style=3154,
+                             fill_style=3354,
                              # fill_style=3005,
                              fill_color=16),
                 # INPUT UNCERT
@@ -1905,7 +1916,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              label="Data stat.",
                              line_color=self.plot_styles['unfolded_stat_colour'], line_width=0, line_style=3,
                              marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
-                             fill_style=3245,
+                             fill_style=3545,
                              # fill_style=3003,
                              fill_color=self.plot_styles['unfolded_stat_colour']),
             ]
@@ -1917,7 +1928,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 is_herwig = "shower" in syst_dict['label'].lower() or "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label=syst_dict['label'],
+                                 label="" if "down" in syst_dict['label'] else syst_dict['label'].replace(" up","").replace("hadronization","hadr."),
                                  line_color=syst_dict['colour'],
                                  leg_draw_opt="L" if is_herwig else "P",
                                  line_width=self.line_width if is_herwig else 0,
@@ -1937,7 +1948,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                                    fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
-                                label='Scale uncertainty', leg_draw_opt="L",
+                                label='#mu scales', leg_draw_opt="L",
                                 **scale_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
@@ -1953,7 +1964,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                                  fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
-                                label='PDF uncertainty', leg_draw_opt="L",
+                                label='PDF', leg_draw_opt="L",
                                 **pdf_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist, -1),
@@ -2002,14 +2013,16 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         ylim=ylim,
                         subplot_type=None)
             self._modify_plot_paper(plot)
-            plot.default_canvas_size = (800, 700)
-            plot.legend.SetX1(0.43)
-            plot.legend.SetY1(0.63)
+            #plot.default_canvas_size = (800, 700)
+            plot.legend.SetX1(0.48)
+            plot.legend.SetY1(0.58)
             plot.legend.SetX2(0.93)
             plot.legend.SetY2(0.87)
-            if len(entries) > 5: plot.legend.SetNColumns(2)
+            #if len(entries) > 10: plot.legend.SetNColumns(2)
+            plot.legend.SetTextSize(0.035)
             plot.plot("NOSTACK E2 P L") # hard to get one that is points for systs, and line for stats, and fill for shaded
             plot.main_pad.cd()
+            plot.container.GetXaxis().SetTickSize(0.02)
             if xlim is not None:
                 line = ROOT.TLine(xlim[0], 1, xlim[1], 1)
             else:
@@ -2022,6 +2035,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             stp = self.setup
             fname = f'unfolded_syst_variations_vs_nominal_{stp.append}_bin_{ibin:d}_divBinWidth{stp.paper_str}.{stp.output_fmt}'
             self.save_plot(plot, os.path.join(self.setup.output_dir, fname))
+            print(os.path.join(self.setup.output_dir, fname))
 
     def plot_syst_fraction_unnormalised(self):
         """Plot varation / central value on absolute hists
@@ -2074,7 +2088,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              label="Total uncertainty",
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=0, line_style=2,
                              marker_color=self.plot_styles['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
-                             fill_style=3154,
+                             fill_style=3354,
                              # fill_style=3005,
                              fill_color=16),
                 # INPUT UNCERT
@@ -2082,7 +2096,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                              label="Data stat.",
                              line_color=self.plot_styles['unfolded_stat_colour'], line_width=0, line_style=3,
                              marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
-                             fill_style=3245,
+                             fill_style=3545,
                              # fill_style=3003,
                              fill_color=self.plot_styles['unfolded_stat_colour']),
             ]
@@ -2094,7 +2108,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 is_herwig = "shower" in syst_dict['label'].lower() or "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label=syst_dict['label'],
+                                 label="" if "down" in syst_dict['label'] else syst_dict['label'].replace(" up",""),
                                  line_color=syst_dict['colour'],
                                  leg_draw_opt="L" if is_herwig else "P",
                                  line_width=self.line_width if is_herwig else 0,
@@ -2114,7 +2128,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                                    fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
-                                label='Scale uncertainty', leg_draw_opt="L",
+                                label='#mu scales', leg_draw_opt="L",
                                 **scale_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
@@ -2130,7 +2144,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                                  fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
-                                label='PDF uncertainty', leg_draw_opt="L",
+                                label='PDF', leg_draw_opt="L",
                                 **pdf_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist, -1),
@@ -2176,14 +2190,16 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         ylim=ylim,
                         subplot_type=None)
             self._modify_plot_paper(plot)
-            plot.default_canvas_size = (800, 700)
-            plot.legend.SetX1(0.43)
-            plot.legend.SetY1(0.63)
+            #plot.default_canvas_size = (800, 700)
+            plot.legend.SetX1(0.48)
+            plot.legend.SetY1(0.58)
             plot.legend.SetX2(0.93)
             plot.legend.SetY2(0.87)
-            if len(entries) > 5: plot.legend.SetNColumns(2)
+            #if len(entries) > 10: plot.legend.SetNColumns(2)
+            plot.legend.SetTextSize(0.03)
             plot.plot("NOSTACK E2 P L") # hard to get one that is points for systs, and line for stats
             plot.main_pad.cd()
+            plot.container.GetXaxis().SetTickSize(0.02)
             if xlim is not None:
                 line = ROOT.TLine(xlim[0], 1, xlim[1], 1)
             else:
@@ -2892,7 +2908,7 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
                              label="Total uncertainty",
                              line_color=self.plot_styles['unfolded_total_colour'], line_width=0, line_style=2,
                              marker_color=self.plot_styles['unfolded_total_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
-                             fill_style=3154,
+                             fill_style=3354,
                              # fill_style=3005,
                              fill_color=16),
                 # INPUT UNCERT
@@ -2900,7 +2916,7 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
                              label="Data stat.",
                              line_color=self.plot_styles['unfolded_stat_colour'], line_width=0, line_style=3,
                              marker_color=self.plot_styles['unfolded_stat_colour'], marker_style=cu.Marker.get('circle'), marker_size=0,
-                             fill_style=3245,
+                             fill_style=3545,
                              # fill_style=3003,
                              fill_color=self.plot_styles['unfolded_stat_colour']),
             ]
@@ -2912,7 +2928,7 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 is_herwig = "shower" in syst_dict['label'].lower() or "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label=syst_dict['label'],
+                                 label="" if "down" in syst_dict['label'] else syst_dict['label'].replace(" up",""),
                                  line_color=syst_dict['colour'],
                                  leg_draw_opt="L" if is_herwig else "P",
                                  line_width=self.line_width if is_herwig else 0,
@@ -2932,7 +2948,7 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
                                    fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist),
-                                label='Scale uncertainty', leg_draw_opt="L",
+                                label='#mu scales', leg_draw_opt="L",
                                 **scale_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(scale_hist, -1),
@@ -2948,7 +2964,7 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
                                  fill_style=0, fill_color=15)
                 entries.extend([
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist),
-                                label='PDF uncertainty', leg_draw_opt="L",
+                                label='PDF', leg_draw_opt="L",
                                 **pdf_style),
                     # add -ve side, no label as we don't want it in legend
                     Contribution(_convert_error_bars_to_error_ratio_hist(pdf_hist, -1),
@@ -2992,12 +3008,13 @@ class GenLambdaBinnedPlotter(BinnedPlotter):
                         ylim=ylim,
                         subplot_type=None)
             self._modify_plot(plot)
-            plot.default_canvas_size = (800, 700)
-            plot.legend.SetX1(0.43)
-            plot.legend.SetY1(0.63)
+            #plot.default_canvas_size = (800, 700)
+            plot.legend.SetX1(0.48)
+            plot.legend.SetY1(0.58)
             plot.legend.SetX2(0.93)
             plot.legend.SetY2(0.87)
-            if len(entries) > 5: plot.legend.SetNColumns(2)
+            #if len(entries) > 10: plot.legend.SetNColumns(2)
+            plot.legend.SetTextSize(0.03)
             plot.plot("NOSTACK E2 P L") # hard to get one that is points for systs, and line for stats
             plot.set_logx(do_more_labels=False)
             plot.main_pad.cd()
@@ -3191,15 +3208,15 @@ class RecoPtBinnedPlotter(BinnedPlotter):
             # and divide by data (with errors), as if you had MC = data with 0 error
             # data_stat_ratio = data_no_errors.Clone()
             # data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
-            # data_stat_ratio.SetFillStyle(3245)
+            # data_stat_ratio.SetFillStyle(3545)
             # data_stat_ratio.SetFillColor(self.plot_styles['unfolded_stat_colour'])
             # data_stat_ratio.SetLineWidth(0)
             # data_stat_ratio.SetMarkerSize(0)
 
             data_total_ratio = data_no_errors.Clone()
             data_total_ratio.Divide(data_hist_bin)
-            data_total_ratio.SetFillStyle(3254)
-            data_total_ratio.SetFillColor(self.plot_styles['reco_data_colour'])
+            data_total_ratio.SetFillStyle(3354)
+            data_total_ratio.SetFillColor(16)
             data_total_ratio.SetLineWidth(0)
             data_total_ratio.SetMarkerSize(0)
 
@@ -3303,15 +3320,15 @@ class RecoPtBinnedPlotter(BinnedPlotter):
             # and divide by data (with errors), as if you had MC = data with 0 error
             # data_stat_ratio = data_no_errors.Clone()
             # data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
-            # data_stat_ratio.SetFillStyle(3245)
+            # data_stat_ratio.SetFillStyle(3545)
             # data_stat_ratio.SetFillColor(self.plot_styles['unfolded_stat_colour'])
             # data_stat_ratio.SetLineWidth(0)
             # data_stat_ratio.SetMarkerSize(0)
 
             data_total_ratio = data_no_errors.Clone()
             data_total_ratio.Divide(data_hist_bin)
-            data_total_ratio.SetFillStyle(3254)
-            data_total_ratio.SetFillColor(self.plot_styles['reco_data_colour'])
+            data_total_ratio.SetFillStyle(3354)
+            data_total_ratio.SetFillColor(16)
             data_total_ratio.SetLineWidth(0)
             data_total_ratio.SetMarkerSize(0)
 
@@ -4375,9 +4392,9 @@ class BigNormalised1DPlotter(object):
         data_total_ratio = data_no_errors.Clone()
         data_total_ratio.Divide(data)
 
-        data_total_ratio.SetFillStyle(3154)
+        data_total_ratio.SetFillStyle(3354)
         # data_total_ratio.SetFillColor(PLOT_STYLES['unfolded_total_colour'])
-        data_total_ratio.SetFillColor(ROOT.kGray+1) # not black, too dark
+        data_total_ratio.SetFillColor(16) # not black, too dark
         data_total_ratio.SetLineWidth(0)
         data_total_ratio.SetMarkerSize(0)
 

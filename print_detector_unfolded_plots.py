@@ -359,9 +359,15 @@ class DijetZPJGenPtBinnedPlotter(object):
             plot.splitline_legend = False
             # plot.legend.SetFillColor(ROOT.kRed)
             # plot.legend.SetFillStyle(1001)
-            plot.plot("NOSTACK  E1")
+            plot.plot("NOSTACK E1 X0")
             # plot.get_modifier().GetYaxis().SetTitleOffset(plot.get_modifier().GetYaxis().GetTitleOffset()*1.5)
             plot.main_pad.cd()
+
+            for e in [plot.contributions[0].obj,plot.contributions[2].obj]:
+              e.Draw("HIST SAME")
+            for e in [plot.contributions[1].obj,plot.contributions[3].obj]:
+              e.Draw("L SAME")
+
             plot.canvas.cd()
 
             # unfolded_fit = ROOT.TF1("beta_fit_dijet_unfolded", "[2]*TMath::BetaDist(x,[0],[1])", 0, 1)
@@ -455,6 +461,13 @@ class DijetZPJGenPtBinnedPlotter(object):
 
             # Add legend to ratio plot
             plot.subplot_pad.cd()
+
+            for e in [plot.subplot_contributions[0]]:
+              e.Draw("HIST SAME")
+            for e in [plot.subplot_contributions[1]]:
+              e.Draw("L SAME")
+
+
             plot.subplot_leg = ROOT.TLegend(0.3, 0.73, 0.9, 0.9)
             plot.subplot_leg.SetTextSize(0.07)
             plot.subplot_leg.SetFillStyle(0)
@@ -476,6 +489,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                      f'{self.paper_str}.{self.output_fmt}']
             filename = '_'.join([x for x in parts if x])
             plot.save("%s/%s" % (self.output_dir, filename))
+            print("%s/%s" % (self.output_dir, filename))
 
 
 if __name__ == "__main__":

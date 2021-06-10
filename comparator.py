@@ -983,6 +983,10 @@ class Plot(object):
 
             self.subplot_pad.Update()
             self.canvas.Update()
+        else:
+            self._rescale_plot_labels(modifier, 0.8)  # increase title sizes a bit
+            yax = modifier.GetYaxis()
+            yax.SetTitleOffset(yax.GetTitleOffset()*1.2)
 
     def save(self, filename):
         """Save the plot to file. Do some check to make sure dir exists."""

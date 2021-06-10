@@ -114,6 +114,7 @@ def do_flav_nparton_fraction_vs_pt(input_file,
     plot.legend.SetX1(0.55)
     plot.legend.SetY1(0.72)
     plot.legend.SetY2(0.85)
+    print(output_filename)
     plot.save(output_filename)
 
 
@@ -796,6 +797,7 @@ def compare_flavour_fraction_plots_with_rivet(root_dir,
                     p.legend.SetX1(0.5)
                     p.legend.SetNColumns(2)
                 p.set_logx(do_more_labels=True, do_exponent=False)
+                print(output_filename)
                 p.save(output_filename)
             except ZeroContributions as e:
                 warnings.warn("No contributions for %s" % output_filename)

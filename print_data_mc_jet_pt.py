@@ -169,7 +169,7 @@ def do_jet_pt_plot(entries,
 
         # data_stat_ratio = data_no_errors.Clone()
         # data_stat_ratio.Divide(unfolded_hist_bin_stat_errors)
-        # data_stat_ratio.SetFillStyle(3245)
+        # data_stat_ratio.SetFillStyle(3354)
         # data_stat_ratio.SetFillColor(self.plot_colours['unfolded_stat_colour'])
         # data_stat_ratio.SetLineWidth(0)
         # data_stat_ratio.SetMarkerSize(0)
@@ -177,7 +177,7 @@ def do_jet_pt_plot(entries,
         data_total_ratio = data_no_errors.Clone()
         # compare_bins(data_total_ratio, entries[0][0])
         data_total_ratio.Divide(entries[0][0])
-        data_total_ratio.SetFillStyle(3354)
+        data_total_ratio.SetFillStyle(3545)
         # data_total_ratio.SetFillStyle(3002)
         data_total_ratio.SetFillColor(entries[0][1]['fill_color'])
         data_total_ratio.SetLineWidth(0)
@@ -231,7 +231,7 @@ def do_jet_pt_plot(entries,
 
         if total_syst:
             total_syst.SetFillStyle(3003)
-            total_syst.SetFillStyle(3245)
+            total_syst.SetFillStyle(3354)
             # total_syst.SetFillColor(ROOT.kRed)
             # total_syst.SetFillColor(qgc.QCD_COLOUR)
             total_syst.SetFillColor(entries[1][1]['fill_color'])
@@ -663,7 +663,7 @@ def do_dijet_pt_plots(workdir,
             # HERWIG++
             [
                 hpp_hist,
-                dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, fill_color=qgc.HERWIGPP_QCD_COLOUR,
+                dict(line_color=qgc.HERWIGPP_QCD_COLOUR, line_width=lw, line_style=2, fill_color=qgc.HERWIGPP_QCD_COLOUR,
                      marker_color=qgc.HERWIGPP_QCD_COLOUR, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                      label=hpp_label,
                      subplot=ref_hist)
@@ -1179,7 +1179,7 @@ def do_zpj_pt_plots(workdir,
         # HERWIG++
         [
             hpp_hist,
-            dict(line_color=col_hpp, line_width=lw, fill_color=col_hpp,
+            dict(line_color=col_hpp, line_width=lw, line_style=2, fill_color=col_hpp,
                  marker_color=col_hpp, marker_style=cu.Marker.get(qgc.DY_MARKER), marker_size=mc_msize,
                  label=hpp_label,
                  subplot=ref_hist)

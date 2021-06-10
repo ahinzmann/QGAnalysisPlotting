@@ -269,8 +269,8 @@ class SummaryPlotter(object):
                 # and divide by data (with errors), as if you had MC = data with 0 error
                 dijet_central_hist_ratio_error = dijet_central_hist_no_errors.Clone()
                 dijet_central_hist_ratio_error.Divide(dijet_central_hist)
-                dijet_central_hist_ratio_error.SetFillStyle(3245)
-                dijet_central_hist_ratio_error.SetFillColor(ROOT.kBlack if only_one_region else dijet_cen_col)
+                dijet_central_hist_ratio_error.SetFillStyle(3354)
+                dijet_central_hist_ratio_error.SetFillColor(16)
                 dijet_central_hist_ratio_error.SetLineWidth(0)
                 dijet_central_hist_ratio_error.SetMarkerSize(0)
 
@@ -303,8 +303,8 @@ class SummaryPlotter(object):
 
                 dijet_forward_hist_ratio_error = dijet_forward_hist_no_errors.Clone()
                 dijet_forward_hist_ratio_error.Divide(dijet_forward_hist)
-                dijet_forward_hist_ratio_error.SetFillStyle(3254)
-                dijet_forward_hist_ratio_error.SetFillColor(ROOT.kBlack if only_one_region else dijet_fwd_col)
+                dijet_forward_hist_ratio_error.SetFillStyle(3354)
+                dijet_forward_hist_ratio_error.SetFillColor(16)
                 dijet_forward_hist_ratio_error.SetLineWidth(0)
                 dijet_forward_hist_ratio_error.SetMarkerSize(0)
 
@@ -418,9 +418,8 @@ class SummaryPlotter(object):
                 cu.remove_th1_errors(zpj_hist_no_errors)
                 zpj_hist_ratio_error = zpj_hist_no_errors.Clone()
                 zpj_hist_ratio_error.Divide(zpj_hist)
-                zpj_hist_ratio_error.SetFillStyle(3003)
-                zpj_hist_ratio_error.SetFillStyle(3254)
-                zpj_hist_ratio_error.SetFillColor(ROOT.kBlack if only_one_region else zpj_col)
+                zpj_hist_ratio_error.SetFillStyle(3354)
+                zpj_hist_ratio_error.SetFillColor(16)
                 zpj_hist_ratio_error.SetLineWidth(0)
                 zpj_hist_ratio_error.SetMarkerSize(0)
 
@@ -612,7 +611,7 @@ class SummaryPlotter(object):
                                    subplot=zpj_hist_no_errors)
                   theory_style_legend = cont_args.copy()
                   theory_style_legend["fill_color"]=ROOT.kRed-9
-                  theory_style_legend["fill_style"]=3003
+                  theory_style_legend["fill_style"]=3395
                   theory_style_legend["leg_draw_opt"]="FL"
                   entries.append(Contribution(zpj_hist_theory, **cont_args))
                   dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
@@ -751,7 +750,7 @@ class SummaryPlotter(object):
                     is_supplementary=self.is_supplementary,
                     subplot_type='ratio' if metric != 'delta' else None,
                     subplot_title=qgc.SIM_DATA_STR,
-                    subplot_limits=(0.5, 1.5) if self.has_data else (0.9, 1.1)
+                    subplot_limits=(0.7, 1.4)# if self.has_data else (0.9, 1.1)
                     )
         plot.lumi = cu.get_lumi_str(do_dijet=any([do_dijet_fwd, do_dijet_cen]),
                                     do_zpj=do_zpj)
@@ -796,7 +795,7 @@ class SummaryPlotter(object):
 
         plot.main_pad.cd()
         if do_zpj and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
-          zpj_hist_theory_upper.SetFillStyle(3003)
+          zpj_hist_theory_upper.SetFillStyle(3395)
           zpj_hist_theory_upper.SetFillColor(ROOT.kRed-9)
           zpj_hist_theory_upper.SetLineWidth(0)
           zpj_hist_theory_upper.SetMarkerSize(0)
@@ -816,20 +815,20 @@ class SummaryPlotter(object):
 
         # Calculate automatic subplot limits, accounting for the range of values,
         # and allowing for the subplot legend
-        if len(plot.subplot_contributions) > 0:
-            min_max_all = [cu.get_min_max_bin_contents(c) for c in plot.subplot_contributions]
-            min_ratio = min([m[0] for m in min_max_all])
-            max_ratio = max([m[2] for m in min_max_all])
-            ratio_range = max_ratio - min_ratio
-            # add some padding, fraction of range
-            ratio_padding = 0.1*ratio_range
-            min_ratio -= 2*ratio_padding  # bit more padding on lower limit as upper has legend space already
-            max_ratio += ratio_padding
-            new_ratio_range = max_ratio - min_ratio
-            # now add on a fraction of this range to accommodate subplot legend
-            new_ratio_range += 0.6*new_ratio_range
-            plot.subplot_container.SetMinimum(min_ratio)
-            plot.subplot_container.SetMaximum(min_ratio + new_ratio_range)
+        #if len(plot.subplot_contributions) > 0:
+        #    min_max_all = [cu.get_min_max_bin_contents(c) for c in plot.subplot_contributions]
+        #    min_ratio = min([m[0] for m in min_max_all])
+        #    max_ratio = max([m[2] for m in min_max_all])
+        #    ratio_range = max_ratio - min_ratio
+        #    # add some padding, fraction of range
+        #    ratio_padding = 0.1*ratio_range
+        #    min_ratio -= 2*ratio_padding  # bit more padding on lower limit as upper has legend space already
+        #    max_ratio += ratio_padding
+        #    new_ratio_range = max_ratio - min_ratio
+        #    # now add on a fraction of this range to accommodate subplot legend
+        #    new_ratio_range += 0.6*new_ratio_range
+        #    plot.subplot_container.SetMinimum(min_ratio)
+        #    plot.subplot_container.SetMaximum(min_ratio + new_ratio_range)
 
         # Do legend manually with graphs to get the right bars on the ends (sigh)
         for cont in dummy_entries:
@@ -865,7 +864,8 @@ class SummaryPlotter(object):
               zpj_hist_theory_lower_ratio = zpj_hist_theory_lower.Clone()
               zpj_hist_theory_lower_ratio.Divide(zpj_hist_no_errors)
               zpj_hist_theory_lower_ratio.Draw("F SAME")
-              zpj_hist_no_errors.Draw("AXIS SAME")
+              #zpj_hist_no_errors.Draw("AXIS SAME")
+              plot.subplot_pad.RedrawAxis()
             
             draw_opt = "E2 SAME"
             if do_dijet_cen:
