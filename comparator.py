@@ -391,8 +391,9 @@ class Plot(object):
         self.title = title or ""
         self.title_start_y = 0.87
         self.title_diff_y = 0.04
+        final_reading_factor = 1.2
         self.title_left_offset = 0.03 # only for title in plot
-        self.title_font_size = 0.03
+        self.title_font_size = 0.03*final_reading_factor
         self.cms_text_font_size = 0.035
         self.cms_text_y = 0.915
         self.left_title_offset_fudge_factor = 7
@@ -622,6 +623,11 @@ class Plot(object):
                 if self.container:
                     ax = self.container.GetYaxis()
                     ax.SetNoExponent()
+
+            if do_exponent and not do_more_labels:
+                if self.container:
+                    ax = self.container.GetYaxis()
+                    ax.SetNdivisions(508,False)
 
         # update y limits since padding different for log/lin
         if not self.ylim:
@@ -860,25 +866,33 @@ class Plot(object):
         cms_latex = ROOT.TLatex()
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
+        extraOverCmsTextSize  = 0.76
+        cms_latex.SetTextSize(self.cms_text_font_size/extraOverCmsTextSize)
+        start_x = self.left_margin + self.text_left_offset + 0.0075
+        cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[61]{CMS}")
+
+        cms_latex = ROOT.TLatex()
+        cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(self.cms_text_font_size)
 
-        start_x = self.left_margin + self.text_left_offset + 0.0075
+        start_x = self.left_margin + self.text_left_offset + 0.0075 + 0.10
         if self.is_preliminary:
             if self.has_data:
-                cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Preliminary}")
+                cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[52]{ Preliminary}")
             else:
-                cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation Preliminary}")
+                cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[52]{ Simulation Preliminary}")
         else:
             if self.is_supplementary:
                 if self.has_data:
-                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Supplementary}")
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[52]{ Supplementary}")
                 else:
-                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation Supplementary}")
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[52]{ Simulation Supplementary}")
             else:
                 if self.has_data:
-                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}")
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "")
                 else:
-                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[62]{CMS}#font[52]{ Simulation}")
+                    cms_latex.DrawLatexNDC(start_x, self.cms_text_y, "#font[52]{ Simulation}")
 
         # Add lumi / CoM text
         lumi_latex = ROOT.TLatex()

@@ -323,7 +323,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             subplot_type='ratio',
             subplot_title="* / %s" % (self.region['mc_label']),
             # subplot_limits=(0, 2) if self.setup.has_data else (0.75, 1.25),
-            subplot_limits=(0, 2.9)
+            subplot_limits=(0, 3)
         )
         self.unfolder = unfolder
         super().__init__()
@@ -353,7 +353,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                     pt_str=self.setup.pt_var_str,
                     bin_edge_low=bin_edge_low,
                     bin_edge_high=bin_edge_high
-                ))
+                )).replace("1000","1").replace("4000 GeV","4 TeV")
         return title
 
     def plot_unfolded_unnormalised(self):
@@ -481,7 +481,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 self.save_plot(plot2, "%s/unfolded_%s_bin_%d_divBinWidth_lowX.%s" % (self.setup.output_dir, self.setup.append, ibin, self.setup.output_fmt))
 
     def plot_unfolded_with_alt_truth_normalised(self, do_chi2=False, do_zoomed=True):
-        data_total_errors_style = dict(label="Data (total unc.)",
+        data_total_errors_style = dict(label="Data",
                                        line_color=self.plot_styles['unfolded_total_colour'],
                                        line_width=self.line_width,
                                        line_style=1,
@@ -584,9 +584,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
             
             data_entries = [
                 Contribution(unfolded_hist_bin_total_errors, **data_total_errors_style),
-                Contribution(unfolded_hist_bin_stat_errors, **data_stat_errors_style),
+                #Contribution(unfolded_hist_bin_stat_errors, **data_stat_errors_style),
                 # do data with black marker to get it on top
-                Contribution(unfolded_hist_bin_total_errors_marker_noerror, **data_total_errors_style),
+                #Contribution(unfolded_hist_bin_total_errors_marker_noerror, **data_total_errors_style),
             ]
 
             # For subplot to ensure only MC errors drawn, not MC+data
@@ -614,7 +614,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 # alt_reduced_chi2 = alt_mc_stats[0] / nbins
 
                 n_sig_fig = 2
-                chi2_template = "\n#lower[-0.1]{{(#chi^{{2}} / N_{{bins}} = {chi2:g} / {nbins:d})}}"
+                chi2_template = "\n#lower[-0.1]{{(#chi^{{2}}/N_{{bins}} = {chi2:g}/{nbins:d})}}"
                 this_mc_style['label'] += chi2_template.format(chi2=cu.nsf(mc_stats[0], n_sig_fig), nbins=nbins)
                 this_alt_mc_style['label'] += chi2_template.format(chi2=cu.nsf(alt_mc_stats[0], n_sig_fig), nbins=nbins)
                 this_theory_style_legend['label'] += chi2_template.format(chi2=cu.nsf(theory_stats[0], n_sig_fig), nbins=nbins)
@@ -650,12 +650,38 @@ class GenPtBinnedPlotter(BinnedPlotter):
                         **self.pt_bin_plot_args)
 
             plot.subplot_title = qgc.SIM_DATA_STR
+            #print((self.setup.region['name'],self.setup.angle.var,self.setup.jet_algo,ibin))
+            if not (self.setup.region['name'],self.setup.angle.var,self.setup.jet_algo,ibin) in [
+                ('ZPlusJets', 'jet_puppiMultiplicity', 'AK4', 3),
+                ('Dijet_central', 'jet_puppiMultiplicity', 'AK4', 3),
+                ('ZPlusJets', 'jet_pTD', 'AK4', 3),
+                ('Dijet_central', 'jet_pTD', 'AK4', 3),
+                ('ZPlusJets', 'jet_thrust', 'AK4', 3),
+                ('Dijet_central', 'jet_thrust', 'AK4', 3),
+                ('ZPlusJets', 'jet_width', 'AK4', 3),
+                ('Dijet_central', 'jet_width', 'AK4', 3),
+                ('ZPlusJets', 'jet_LHA', 'AK4', 3),
+                ('Dijet_central', 'jet_LHA', 'AK4', 3),
+                ('ZPlusJets', 'jet_LHA', 'AK4', 8),
+                ('Dijet_central', 'jet_LHA', 'AK4', 12),
+                ('ZPlusJets', 'jet_LHA', 'AK8', 3),
+                ('Dijet_central', 'jet_LHA', 'AK8', 3),
+                ('ZPlusJets', 'jet_LHA_charged', 'AK4', 3),
+                ('Dijet_central', 'jet_LHA_charged', 'AK4', 3),
+                ('ZPlusJets_groomed', 'jet_LHA', 'AK4', 3),
+                ('Dijet_central_groomed', 'jet_LHA', 'AK4', 3),
+                ]:
+                plot.is_supplementary = True
             self._modify_plot_paper(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually
             plot.do_legend = False
-            plot.legend.SetTextSize(0.03)
-            plot.legend.SetY1(0.7)
+            final_reading_factor = 1.18
+            plot.legend.SetTextSize(0.03*final_reading_factor)
+            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+              plot.legend.SetY1(0.68)
+            else:
+              plot.legend.SetY1(0.7)
             plot.legend.SetX1(0.57)
             plot.legend.SetX2(0.93)
             # plot.legend.SetEntrySeparation(0.005)
@@ -1979,7 +2005,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             entries.extend([
                 # RESPONSE UNCERT
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors),
-                             label="Response matrix stat.", leg_draw_opt="L",
+                             label="Response m. stat.", leg_draw_opt="L",
                              **rsp_style),
                 # Add in the -ve side, but no label as we don't want it in the legend
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors, -1),
@@ -2015,11 +2041,12 @@ class GenPtBinnedPlotter(BinnedPlotter):
             self._modify_plot_paper(plot)
             #plot.default_canvas_size = (800, 700)
             plot.legend.SetX1(0.48)
-            plot.legend.SetY1(0.58)
+            plot.legend.SetY1(0.56)
             plot.legend.SetX2(0.93)
             plot.legend.SetY2(0.87)
             #if len(entries) > 10: plot.legend.SetNColumns(2)
-            plot.legend.SetTextSize(0.035)
+            final_reading_factor=1.15
+            plot.legend.SetTextSize(0.035*final_reading_factor)
             plot.plot("NOSTACK E2 P L") # hard to get one that is points for systs, and line for stats, and fill for shaded
             plot.main_pad.cd()
             plot.container.GetXaxis().SetTickSize(0.02)
@@ -2032,6 +2059,14 @@ class GenPtBinnedPlotter(BinnedPlotter):
             line.SetLineColor(ROOT.kGray+2)
             line.SetLineColor(ROOT.kBlack)
             line.Draw()
+            l2=plot.legend.Clone("l2")
+            l2.Clear()
+            for e in entries:
+              if e.label!="" and e.marker_size>0: continue
+              if e.label!="" and e.line_width>0 and not "Shower" in e.label: continue
+              l2.AddEntry(e.obj,"","P" if e.marker_size>0 else "")
+            l2.SetX1(0.51)
+            l2.Draw("SAME")
             stp = self.setup
             fname = f'unfolded_syst_variations_vs_nominal_{stp.append}_bin_{ibin:d}_divBinWidth{stp.paper_str}.{stp.output_fmt}'
             self.save_plot(plot, os.path.join(self.setup.output_dir, fname))
@@ -2108,7 +2143,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 this_syst_hist = _convert_syst_shift_to_error_ratio_hist(syst_unfolded_hist_bin, unfolded_hist_bin_total_errors)
                 is_herwig = "shower" in syst_dict['label'].lower() or "herwig" in syst_dict['label'].lower()
                 c = Contribution(this_syst_hist,
-                                 label="" if "down" in syst_dict['label'] else syst_dict['label'].replace(" up",""),
+                                 label="" if "down" in syst_dict['label'] else syst_dict['label'].replace(" up","").replace("hadronization","hadr."),
                                  line_color=syst_dict['colour'],
                                  leg_draw_opt="L" if is_herwig else "P",
                                  line_width=self.line_width if is_herwig else 0,
@@ -2158,7 +2193,7 @@ class GenPtBinnedPlotter(BinnedPlotter):
             entries.extend([
                 # RESPONSE UNCERT
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors),
-                             label="Response matrix stat.", leg_draw_opt="L",
+                             label="Response m. stat.", leg_draw_opt="L",
                              **rsp_style),
                 # Add in the -ve side, but no label as we don't want it in the legend
                 Contribution(_convert_error_bars_to_error_ratio_hist(unfolded_hist_bin_rsp_errors, -1),
@@ -2192,11 +2227,12 @@ class GenPtBinnedPlotter(BinnedPlotter):
             self._modify_plot_paper(plot)
             #plot.default_canvas_size = (800, 700)
             plot.legend.SetX1(0.48)
-            plot.legend.SetY1(0.58)
+            plot.legend.SetY1(0.56)
             plot.legend.SetX2(0.93)
             plot.legend.SetY2(0.87)
             #if len(entries) > 10: plot.legend.SetNColumns(2)
-            plot.legend.SetTextSize(0.03)
+            final_reading_factor=1.15
+            plot.legend.SetTextSize(0.035*final_reading_factor)
             plot.plot("NOSTACK E2 P L") # hard to get one that is points for systs, and line for stats
             plot.main_pad.cd()
             plot.container.GetXaxis().SetTickSize(0.02)
@@ -2209,6 +2245,14 @@ class GenPtBinnedPlotter(BinnedPlotter):
             line.SetLineColor(ROOT.kGray+2)
             line.SetLineColor(ROOT.kBlack)
             line.Draw()
+            l2=plot.legend.Clone("l2")
+            l2.Clear()
+            for e in entries:
+              if e.label!="" and e.marker_size>0: continue
+              if e.label!="" and e.line_width>0 and not "Shower" in e.label: continue
+              l2.AddEntry(e.obj,"","P" if e.marker_size>0 else "")
+            l2.SetX1(0.51)
+            l2.Draw("SAME")
             stp = self.setup
             fname = f'unfolded_unnormalised_syst_variations_vs_nominal_{stp.append}_bin_{ibin:d}_divBinWidth{stp.paper_str}.{stp.output_fmt}'
             self.save_plot(plot, os.path.join(self.setup.output_dir, fname))
@@ -3239,6 +3283,7 @@ class RecoPtBinnedPlotter(BinnedPlotter):
             plot.subplot_legend = ROOT.TLegend(x_left, y_bottom, x_left+width, y_bottom+height)
             plot.subplot_legend.AddEntry(data_total_ratio, qgc.DATA_STAT_UNC_STR, "F")
             plot.subplot_legend.SetFillStyle(0)
+            plot.subplot_legend.SetTextSize(0.085)
             plot.subplot_legend.Draw()
 
             plot.canvas.cd()

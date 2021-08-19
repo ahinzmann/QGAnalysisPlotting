@@ -128,7 +128,7 @@ def do_all_flavour_fraction_plots(root_dir,
                                   is_preliminary=True):
     """Do plots of jet flavour fractions vs pT, eta for both Z+jets and dijets regions"""
     # pt_bins = qgc.PT_BINS_INC_UFLOW
-    pt_bins = qgc.PT_BINS_ZPJ
+    pt_bins = qgc.PT_BINS #_ZPT
 
     # Plots of all flavour fractions vs pT for a given sample/selection
     # --------------------------------------------------------------------------
@@ -295,11 +295,15 @@ def do_all_flavour_fraction_plots(root_dir,
 
             labels = [qgc.Dijet_CEN_LABEL, qgc.Dijet_FWD_LABEL, qgc.ZpJ_LABEL]
 
+            radius_ind = 1 if '_ak4puppi_' in root_dir else 2
+            radius_str = 'AK4' if radius_ind == 1 else 'AK8'
+            title = "{jet_algo}".format(jet_algo=radius_str)
             append = "_paper" if not is_preliminary else ""
             qgf.compare_flavour_fractions_vs_pt(input_files=input_files,
                                                 dirnames=dirnames,
                                                 pt_bins=pt_bins,
                                                 labels=labels,
+                                                title=title,
                                                 flav=this_flav,
                                                 output_filename="%s/%s_flav_fraction_compare_jet1%s.%s" % (plot_dir, this_flav, append, OUTPUT_FMT),
                                                 var_prepend=var_prepend,

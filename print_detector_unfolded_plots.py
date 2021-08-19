@@ -292,13 +292,13 @@ class DijetZPJGenPtBinnedPlotter(object):
 
             if do_dijet:
                 dijet_entries.append(Contribution(dijet_detector_hist,
-                                                  label='Detector-level (stat. only)\n%s' % (_stat_label(dijet_detector_mean, dijet_detector_mean_err, n_dp)),
+                                                  label='Detector-level\n%s' % (_stat_label(dijet_detector_mean, dijet_detector_mean_err, n_dp)),
                                                   line_color=self.plot_colours['dijet_colour'],
                                                   line_width=self.line_width,
                                                   line_style=self.line_style_detector,
                                                   marker_color=self.plot_colours['dijet_colour'],
                                                   marker_style=cu.Marker.get('circle', filled=False),
-                                                  marker_size=0.75,
+                                                  marker_size=1.2,
                                                   subplot=zpj_detector_hist if do_zpj else None))
                 dijet_entries.append(Contribution(dijet_unfolded_hist,
                                                   label='Particle-level\n%s' % (_stat_label(dijet_unfolded_mean, dijet_unfolded_mean_err, n_dp)),
@@ -307,18 +307,18 @@ class DijetZPJGenPtBinnedPlotter(object):
                                                   line_style=1,
                                                   marker_color=self.plot_colours['dijet_colour'],
                                                   marker_style=cu.Marker.get('circle', filled=True),
-                                                  marker_size=0.75,
+                                                  marker_size=1.2,
                                                   subplot=zpj_unfolded_hist if do_zpj else None))
 
             if do_zpj:
                 zpj_entries.append(Contribution(zpj_detector_hist,
-                                            label='Detector-level (stat. only)\n%s' % (_stat_label(zpj_detector_mean, zpj_detector_mean_err, n_dp)),
+                                            label='Detector-level\n%s' % (_stat_label(zpj_detector_mean, zpj_detector_mean_err, n_dp)),
                                             line_color=self.plot_colours['zpj_colour'],
                                             line_width=self.line_width,
                                             line_style=self.line_style_detector,
                                             marker_color=self.plot_colours['zpj_colour'],
                                             marker_style=cu.Marker.get('square', filled=False),
-                                            marker_size=0.75))
+                                            marker_size=1.2))
                 zpj_entries.append(Contribution(zpj_unfolded_hist,
                                             label='Particle-level\n%s' % (_stat_label(zpj_unfolded_mean, zpj_unfolded_mean_err, n_dp)),
                                             line_color=self.plot_colours['zpj_colour'],
@@ -326,7 +326,7 @@ class DijetZPJGenPtBinnedPlotter(object):
                                             line_style=1,
                                             marker_color=self.plot_colours['zpj_colour'],
                                             marker_style=cu.Marker.get('square', filled=True),
-                                            marker_size=0.75))
+                                            marker_size=1.2))
 
             all_entries = list(chain(dijet_entries, zpj_entries))
             plot = Plot(all_entries,
@@ -393,9 +393,10 @@ class DijetZPJGenPtBinnedPlotter(object):
             legend_x1 = 0.54
             legend_x2 = 0.75 # this doesn't really control width - legend_text_size mainly does
             label_left_offset = 0.01
-            label_text_size = 0.032
+            final_reading_factor=1.2
+            label_text_size = 0.032*final_reading_factor
             label_top = plot.title_start_y
-            legend_text_size = 0.028
+            legend_text_size = 0.028*final_reading_factor
             inter_region_offset = 0.025
             if do_dijet:
                 dijet_legend = plot.legend.Clone()

@@ -251,7 +251,7 @@ def compare_flavour_fractions_vs_pt(input_files,
         p.main_pad.SetBottomMargin(0.16)
         p.get_modifier().GetXaxis().SetTitleOffset(1.4)
         p.get_modifier().GetXaxis().SetTitleSize(.045)
-        p.legend.SetX1(0.56)
+        p.legend.SetX1(0.5)
         p.legend.SetY1(0.65)
         p.legend.SetY2(0.87)
         p.set_logx(do_more_labels=True, do_exponent=False)

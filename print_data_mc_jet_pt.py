@@ -259,7 +259,7 @@ def do_jet_pt_plot(entries,
         if pdf_syst:
             plot.subplot_leg.AddEntry(pdf_syst, "PDF syst.", "F")
         if total_syst:
-            plot.subplot_leg.AddEntry(total_syst, "MC syst. unc.", "F")
+            plot.subplot_leg.AddEntry(total_syst, "MC total unc.", "F")
 
         plot.subplot_leg.Draw()
 

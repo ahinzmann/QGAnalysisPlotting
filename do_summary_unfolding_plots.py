@@ -351,7 +351,7 @@ class SummaryPlotter(object):
                   errors=np.delete(errors,0)
                   areas=np.delete(areas,0)
                   centers=np.delete(centers,0)
-                  print(min_pt_bin_ind, ibin)
+                  #print(min_pt_bin_ind, ibin)
                   for post in ["_fix",""]:
                     theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
                     theory_file+="data_R"+jet_algo['label'][-1]+"/"
@@ -361,7 +361,7 @@ class SummaryPlotter(object):
                     theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
                     theory_file+=".dat"
                     if os.path.exists(theory_file): break
-                  print(theory_file)
+                  #print(theory_file)
                   igenbin=0
                   for line in open(theory_file).readlines():
                     if line.count(".")==5:
@@ -391,7 +391,7 @@ class SummaryPlotter(object):
                     sherpa_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
                     sherpa_file+=".dat"
                     if os.path.exists(sherpa_file): break
-                  print(sherpa_file)
+                  #print(sherpa_file)
                   igenbin=0
                   for line in open(sherpa_file).readlines():
                     if line.count(".")==5:
@@ -760,13 +760,14 @@ class SummaryPlotter(object):
         plot.title_left_offset = 0.05
         plot.title_font_size = 0.035
 
-        plot.legend.SetX1(0.6)
+        plot.legend.SetX1(0.55)
         plot.legend.SetX2(0.9)
 
         leg_y2 = plot.title_start_y + 0.01  # magic extra bit
         plot.legend.SetY2(leg_y2)
         plot.legend.SetTextSize(0.035)
-        plot.legend.SetTextSize(0.03)
+        final_reading_factor=1.2
+        plot.legend.SetTextSize(0.03*final_reading_factor)
         plot.legend.SetEntrySeparation(0.01)
 
         # scale height with number of entries
@@ -812,6 +813,11 @@ class SummaryPlotter(object):
         for e in plot.contributions:
           graphs+=[ROOT.TGraphErrors(e.obj)]
           graphs[-1].Draw("P SAME")
+
+        #print("NAME: ",angle.var.replace("jet_",""),region_name,jet_algo['label'])
+        #datag=plot.contributions[-1].obj
+        #for b in range(datag.GetNbinsX()):
+        #  print(str(datag.GetXaxis().GetBinCenter(b+1))+" "+str(datag.GetXaxis().GetBinCenter(b+1)-datag.GetXaxis().GetBinLowEdge(b+1))+" "+str(datag.GetXaxis().GetBinUpEdge(b+1)-datag.GetXaxis().GetBinCenter(b+1))+" "+str(datag.GetBinContent(b+1))+" "+str(datag.GetBinError(b+1))+" "+str(datag.GetBinError(b+1)))
 
         # Calculate automatic subplot limits, accounting for the range of values,
         # and allowing for the subplot legend
@@ -1152,6 +1158,15 @@ class SummaryPlotter(object):
                          marker_size=COMMON_STYLE_DICT['marker_size'],
                          marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'])
 
+    def _style_theory_hist(self, hist):
+        self._style_hist(hist,
+                         line_style=1,
+                         color=ROOT.kRed-9,
+                         fill_style=3395,
+                         fill_color=ROOT.kRed-9,
+                         marker_size=0,
+                         marker_style=1)
+
     @staticmethod
     def calc_hists_max_min(hists):
         y_up, y_down = -999999, 999999
@@ -1167,7 +1182,7 @@ class SummaryPlotter(object):
         up_padding = up_padding_frac * y_range
         return y_up + up_padding, y_down - down_padding
 
-    def construct_mean_rms_hist_groups(self, selections):
+    def construct_mean_rms_hist_groups(self, selections, add_theory=True):
         """Construct mean & RMS hists for plots
 
         See plot_mean_rms_bins_summary() docstring about `selections` arg.
@@ -1186,6 +1201,7 @@ class SummaryPlotter(object):
             mean_entries_data = []
             mean_entries_mc = []
             mean_entries_alt_mc = []
+            mean_entries_theory = []
             # each top-level index is a sample
             mean_entries_other_samples = [[] for _ in self.other_samples]  # for loop needed to create indepedent lists
 
@@ -1211,6 +1227,47 @@ class SummaryPlotter(object):
                 if not self.only_yoda_data:
                     mean_entries_mc.append([results['mean_truth'].item(), results['mean_err_truth'].item()])
                     mean_entries_alt_mc.append([results['mean_alt_truth'].item(), results['mean_err_alt_truth'].item()])
+                    ### new theory
+                    var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
+                            "jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(query.split('"')[-2])+1
+                    ibin=int(query.split('&')[1].split("=")[-1])
+                    if "ZPlusJets" in query and var_number in [3,4,5,8,9,10]:
+                     angle_output_dir = "%s/%s/%s" % ("/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/trees/unfolded_ak"+query.split('"')[1][2]+"puppi", query.split('"')[-4], query.split('"')[-2])
+                     root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
+                     import uproot
+                     uproot_file = uproot.open(root_filename)
+                     #print(root_filename, query.split('"')[-4], query.split('"')[-2], self.pt_bins_zpj[(0 if "4" in query.split('"')[1] else 2):])
+                     unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, query.split('"')[-4], query.split('"')[-2], self.pt_bins_zpj[(0 if "4" in query.split('"')[1] else 2):])
+                     errors=np.ndarray(1)
+                     areas=np.ndarray(1)
+                     centers=np.ndarray(1)
+                     errors=np.delete(errors,0)
+                     areas=np.delete(areas,0)
+                     centers=np.delete(centers,0)
+                     for post in ["_fix",""]:
+                       theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                       theory_file+="data_R"+query.split('"')[1][2]+"/"
+                       theory_file+="RSIG_THR_RES_NP_"
+                       theory_file+="d"+("1" if "4" in query.split('"')[1] else "2")+("2" if (not "~isgroomed" in query) else "1")+"-"
+                       theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
+                       theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                       theory_file+=".dat"
+                       if os.path.exists(theory_file): break
+                     #print(theory_file)
+                     igenbin=0
+                     for line in open(theory_file).readlines():
+                       if line.count(".")==5:
+                         igenbin+=1
+                         width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
+                         errors=np.append(errors,float(line.split("\t")[3])*width)
+                         areas=np.append(areas,float(line.split("\t")[2])*width)
+                         centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
+                         assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
+                     mean = metrics.calc_mean_jax(areas, centers)
+                     err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
+                     mean_entries_theory.append([mean,err])
+                    else:
+                     mean_entries_theory.append([-999,0])
 
                     rms_entries_mc.append([results['rms_truth'].item(), results['rms_err_truth'].item()])
                     rms_entries_alt_mc.append([results['rms_alt_truth'].item(), results['rms_err_alt_truth'].item()])
@@ -1257,6 +1314,12 @@ class SummaryPlotter(object):
                 hist_mean_alt_mc = self._make_hist_from_values(mean_entries_alt_mc, bin_names=bin_names)
                 self._style_alt_mc_hist(hist_mean_alt_mc)
                 hists.append(hist_mean_alt_mc)
+
+                _check_values(mean_entries_theory, "mean_entries_theory")
+                hist_mean_theory = self._make_hist_from_values(mean_entries_theory, bin_names=bin_names)
+                self._style_theory_hist(hist_mean_theory)
+                if add_theory:
+                  hists.append(hist_mean_theory)
 
             for sample, entries in zip(self.other_samples, mean_entries_other_samples):
                 _check_values(entries, "mean_entries_%s" % sample['key'])
@@ -1567,6 +1630,20 @@ class SummaryPlotter(object):
         cms_latex = ROOT.TLatex()
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
+        extraOverCmsTextSize  = 0.76
+        cms_latex.SetTextSize(0.05/extraOverCmsTextSize)
+        # Get the text sitting just above the axes of the mean plot
+        # Axes end inside the mean pad at (1-top_margin), but this has
+        # to be scaled to canvas NDC
+        # Then add a little extra spacing ontop to separate text from axes line
+        latex_height = 1 - pad_offset_top - (pads[0].GetAbsHNDC() * pads[0].GetTopMargin()) + 0.02
+        # Want it to start at the left edge of the first plot
+        start_x = left_margin + (pad_width*pad_left_margin)
+        cms_latex.DrawLatexNDC(start_x, latex_height, "#font[61]{CMS}")
+
+        cms_latex = ROOT.TLatex()
+        cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(0.05)
         # Get the text sitting just above the axes of the mean plot
         # Axes end inside the mean pad at (1-top_margin), but this has
@@ -1575,25 +1652,25 @@ class SummaryPlotter(object):
         latex_height = 1 - pad_offset_top - (pads[0].GetAbsHNDC() * pads[0].GetTopMargin()) + 0.02
 
         # Want it to start at the left edge of the first plot
-        start_x = left_margin + (pad_width*pad_left_margin)
+        start_x = left_margin + (pad_width*pad_left_margin) + 0.03
         # # start_x = 100
         is_supplementary = True
         if self.is_preliminary:
             if self.has_data:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Preliminary}")
             else:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation Preliminary}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation Preliminary}")
         else:
             if is_supplementary:
                 if self.has_data:
-                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Supplementary}")
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Supplementary}")
                 else:
-                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation Supplementary}")
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation Supplementary}")
             else:
                 if self.has_data:
-                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}")
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "")
                 else:
-                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         # Get the lumi text aligned to right edge of axes
         # i.e. 1-pad_right_margin, but remember to scale by pad width
@@ -1615,7 +1692,7 @@ class SummaryPlotter(object):
         canvas.SaveAs(output_file)
 
 
-    def construct_q_vs_g_hist_groups(self, gluon_selections, quark_selections):
+    def construct_q_vs_g_hist_groups(self, gluon_selections, quark_selections, add_theory=True):
         """Summary
 
         Parameters
@@ -1638,8 +1715,8 @@ class SummaryPlotter(object):
         if len(gluon_selections) != len(quark_selections):
             raise ValueError("Require len(gluon_selections) == len(quark_selections)")
 
-        gluon_mean_hists, gluon_rms_hists = self.construct_mean_rms_hist_groups(gluon_selections)
-        quark_mean_hists, quark_rms_hists = self.construct_mean_rms_hist_groups(quark_selections)
+        gluon_mean_hists, gluon_rms_hists = self.construct_mean_rms_hist_groups(gluon_selections, add_theory)
+        quark_mean_hists, quark_rms_hists = self.construct_mean_rms_hist_groups(quark_selections, add_theory)
 
         mean_hists, rms_hists = [], []
         for sel_ind in range(len(gluon_mean_hists)):
@@ -1700,7 +1777,7 @@ class SummaryPlotter(object):
         """
         print("plotting q_vs_g_bins_summary")
         mean_q_vs_g_ratio_hists, rms_q_vs_g_ratio_hists = self.construct_q_vs_g_hist_groups(gluon_selections=gluon_selections,
-                                                                                            quark_selections=quark_selections)
+                                                                                            quark_selections=quark_selections, add_theory=False)
         mean_q_vs_g_data_vs_mc_ratio_hists = self.construct_q_vs_g_mc_vs_data_hist_groups(mean_q_vs_g_ratio_hists)
         self.plot_two_row_bins_summary(selection_groups=quark_selections[0:1]+gluon_selections[1:], # merge the two to get correct identification of doing dijet and Z+J e.g. for lumi
                                        upper_row_hist_groups=mean_q_vs_g_ratio_hists,
@@ -1722,7 +1799,7 @@ class SummaryPlotter(object):
                                        label_every_bin=False,
                                        lower_row_is_ratio=True,
                                        ylims_upper=ylims_upper,
-                                       ylims_lower=ylims_lower)
+                                       ylims_lower=ylims_lower, add_theory=False)
 
 
     def plot_q_g_mean_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None, ylims=None):
@@ -1791,7 +1868,7 @@ class SummaryPlotter(object):
                                   lower_row_is_ratio=False,
                                   upper_lower_same_ylim=False,
                                   ylims_upper=None,
-                                  ylims_lower=None):
+                                  ylims_lower=None, add_theory=True):
         """Plot 2 row summary plot showing values from choice bins
 
         `selection_groups` is a multi-level list
@@ -1889,7 +1966,8 @@ class SummaryPlotter(object):
             return any(f in text for f in ['frac', 'splitline'])
 
         # gap between right end of plots and edge of canvas, used for legend
-        right_margin = 0.19
+        final_reading_factor=1.15
+        right_margin = 0.19*final_reading_factor
         # pad_left_titles_gap = 0.01 # gap between pad_left_titles and all plots
         pad_to_pad_gap = 0.0025  # gap between plot pad columns
         # how far in from the left the first plotting pad starts. used for y axis title
@@ -1978,6 +2056,7 @@ class SummaryPlotter(object):
                 lower_row_hist_groups.append(new_hist_group)
 
         data_total_ratio = None  # for legend
+        hists_extra=[]
 
         # Now draw the histograms
         for isel, (selection_group, upper_pad, upper_hist_group, lower_pad, lower_hist_group) \
@@ -2034,13 +2113,38 @@ class SummaryPlotter(object):
             # DO LOWER ROW
             # ------------
             lower_pad.cd()
-
             draw_opt = "E1"
-            for ind, hist in enumerate(lower_hist_group[::-1]):
-                if ind == 0:
+            for ind, hist in enumerate(lower_hist_group[::-1][:1]):
+                if hist.GetFillStyle()==3395:
+                    hist_upper=hist.Clone(hist.GetTitle()+"upper")
+                    hists_extra+=[hist_upper]
+                    for b in range(hist.GetNbinsX()):
+                      if hist.GetBinContent(b+1)>0:
+                       hist_upper.SetBinContent(b+1,hist.GetBinContent(b+1)+hist.GetBinError(b+1)*(1 if hist.GetBinError(b+1)>1e-10 else 1e100))
+                       hist_upper.SetBinError(b+1,0)
+                    hist_upper.SetFillStyle(3395)
+                    hist_upper.SetFillColor(ROOT.kRed-9)
+                    hist_upper.SetLineColor(0)
+                    hist_lower=hist.Clone(hist.GetTitle()+"lower")
+                    hists_extra+=[hist_lower]
+                    for b in range(hist.GetNbinsX()):
+                      if hist.GetBinContent(b+1)>0:
+                       hist_lower.SetBinContent(b+1,hist.GetBinContent(b+1)-hist.GetBinError(b+1)*(1 if hist.GetBinError(b+1)>1e-10 else 1e100))
+                       hist_lower.SetBinError(b+1,0)
+                    hist_lower.SetFillStyle(1001)
+                    hist_lower.SetFillColor(10)
+                    hist_lower.SetLineColor(0)
+                    for b in range(hist.GetNbinsX()):
+                       hist.SetBinError(b+1,hist.GetBinError(b+1)*(1e-100 if hist.GetBinError(b+1)>1e-10 else 1))
                     hist.Draw(draw_opt)
-                else:
+                    hist_upper.Draw("F SAME")
+                    hist_lower.Draw("F SAME")
                     hist.Draw(draw_opt + " SAME")
+                    hist.Draw("AXIS SAME")
+                else:
+                    hist.Draw(draw_opt)
+            for ind, hist in enumerate(lower_hist_group[::-1][1:]):
+                hist.Draw(draw_opt + " SAME")
 
             lower_draw_hist = lower_hist_group[-1]
             xax = lower_draw_hist.GetXaxis()
@@ -2172,7 +2276,7 @@ class SummaryPlotter(object):
                 n_leg_entries += multiline_extra
 
         leg_entry_spacing = 0.07
-        leg = ROOT.TLegend(0., 1 - (leg_entry_spacing*n_leg_entries), 1, 1) # relative to leg_pad
+        leg = ROOT.TLegend(0., max(0.5,0.98 - (leg_entry_spacing*n_leg_entries)), 1, 0.98) # relative to leg_pad
 
         # Replace legend markers with graph to get correct error bar endings
         # Yes this is ridiculous
@@ -2183,6 +2287,8 @@ class SummaryPlotter(object):
         self._style_mc_hist(dummy_mc)
         dummy_alt_mc = dummy_gr.Clone()
         self._style_alt_mc_hist(dummy_alt_mc)
+        dummy_theory = dummy_gr.Clone()
+        self._style_theory_hist(dummy_theory)
 
         def _add_entry(obj, label, option):
             parts = label.split("\n")
@@ -2207,6 +2313,8 @@ class SummaryPlotter(object):
         if not self.only_yoda_data:
             _add_entry(dummy_mc, self.mc_label, "LEP")
             _add_entry(dummy_alt_mc, self.alt_mc_label, "LEP")
+            if add_theory:
+              _add_entry(dummy_theory, "NLO+NLL'+NP", "FL")
 
         dummy_other = []  # keep reference
         for sample in self.other_samples:
@@ -2240,19 +2348,20 @@ class SummaryPlotter(object):
             # this is the bottom of the legend in canvas co-ords,
             # note that leg.GetY1 is relative to leg_pad height, so needs scaling
             # to convert to canvas coords
-            leg_bottom = leg_y_bottom + (leg.GetY1() * (leg_y_top-leg_y_bottom))
+            leg_bottom = leg_y_bottom + (0.48 * (leg_y_top-leg_y_bottom))
             leg_bottom -= 0.03  # offset
             # set bottom of key_text to align with bottom axis of plots,
             # plus some fudging since it doesn't quite align
             # make X2 off the canvas, since it tends to crop it in a bit
-            key_text = ROOT.TPaveText(leg_left, pad_offset_bottom+(pad_bottom_margin*pad_height)-0.03, 1.005, leg_bottom, "NB NDC")
+            key_text = ROOT.TPaveText(leg_left, pad_offset_bottom+(pad_bottom_margin*pad_height)-0.03-0.05, 1.005, leg_bottom, "NB NDC")
             key_text.SetFillStyle(4000)
             key_text.SetFillColor(ROOT.kWhite)
             # key_text.SetFillStyle(1001)
             # key_text.SetFillColor(ROOT.kYellow)
             key_text.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
             # if you don't set text size, it scales it automatically
-            # key_text.SetTextSize(0.047)
+            final_reading_factor=1.15
+            key_text.SetTextSize(0.047*final_reading_factor)
             key_text.SetMargin(0.01)
 
             # generate all the key items
@@ -2314,26 +2423,33 @@ class SummaryPlotter(object):
         cms_latex = ROOT.TLatex()
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
-        cms_latex.SetTextSize(0.045)
+        extraOverCmsTextSize  = 0.76
+        cms_latex.SetTextSize(0.045/extraOverCmsTextSize)
         # Get the text sitting just above the axes of the mean plot
         # Axes end inside the mean pad at (1-top_margin), but this has
         # to be scaled to canvas NDC
         # Then add a little extra spacing ontop to separate text from axes line
         latex_height = 1 - pad_offset_top - (upper_pads[0].GetAbsHNDC() * upper_pads[0].GetTopMargin()) + 0.02
-
         # Want it to start at the left edge of the first plot
         start_x = left_margin + (pad_width*pad_left_margin)
+        cms_latex.DrawLatexNDC(start_x, latex_height, "#font[61]{CMS}")
+
+        cms_latex = ROOT.TLatex()
+        cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
+        cms_latex.SetTextFont(42)
+        cms_latex.SetTextSize(0.045)
+        start_x = left_margin + (pad_width*pad_left_margin) + 0.1
         # # start_x = 100
         if self.is_preliminary:
             if self.has_data:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Preliminary}")
             else:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Preliminary Simulation}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Preliminary Simulation}")
         else:
             if self.has_data:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "")
             else:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[62]{CMS}#font[52]{ Simulation}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         # # Get the lumi text aligned to right edge of axes
         # # i.e. 1-pad_right_margin, but remember to scale by pad width
@@ -2353,6 +2469,7 @@ class SummaryPlotter(object):
         canvas.Update()
         cu.check_dir_exists_create(os.path.dirname(os.path.abspath(output_file)))
         canvas.SaveAs(output_file)
+        print(output_file)
 
 
 def unpack_slim_unfolding_root_file_uproot(input_tfile, region_name, angle_name, pt_bins):
@@ -2558,7 +2675,7 @@ if __name__ == "__main__":
     # groomed_template = "#splitline{{{jet_str}, {pt_str}}}{{         Groomed}}"
 
     normal_template = "{jet_str}, {pt_str}"
-    charged_only_template = "{jet_str}, {pt_str},\ncharged-only"
+    charged_only_template = "{jet_str}, {pt_str},\ncharged"
     groomed_template = "{jet_str}, {pt_str},\ngroomed"
 
     # gev_template = "p_{{T}}#in  [{:g}, {:g}] GeV"

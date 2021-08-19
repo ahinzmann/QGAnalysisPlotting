@@ -81,3 +81,5 @@ My_Style.SetHistTopMargin(0.)
 
 My_Style.SetNumberContours(512)
 
+final_reading_factor=1.2
+My_Style.SetLegendTextSize(0.03*final_reading_factor)

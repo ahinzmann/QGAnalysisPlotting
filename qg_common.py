@@ -135,11 +135,11 @@ COMMON_VARS_WITH_FLAV = [
     Angle('jet_pTD', 2, 0, "(p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418, r"(p_{T}^{D})^{2}"),
     # charged-only constit
     # Angle("jet_multiplicity_charged", 0, 0, "Multiplicity (charged)", "#lambda_{0}^{0}", 2),
-    Angle('jet_LHA_charged', 1, 0.5, "LHA (charged-only)", "#lambda_{0.5}^{1}", 600, r"\text{LHA (charged-only)}"),
-    Angle('jet_width_charged', 1, 1, "Width (charged-only)", "#lambda_{1}^{1}", 861, r"\text{Width (charged-only)}"),
-    Angle('jet_thrust_charged', 1, 2, "Thrust (charged-only)", "#lambda_{2}^{1}", 617, r"\text{Thrust (charged-only)}"),
-    Angle("jet_puppiMultiplicity_charged", 0, 0, "Multiplicity (charged-only)", "#lambda_{0}^{0}", 2, r"\text{Multiplicity (charged-only)}"),
-    Angle('jet_pTD_charged', 2, 0, "(p_{T}^{D})^{2} (charged-only)", "#lambda_{0}^{2}", 418, r"(p_{T}^{D})^{2}~\text{(charged-only)}"),
+    Angle('jet_LHA_charged', 1, 0.5, "Charged LHA", "#lambda_{0.5}^{1}", 600, r"\text{Charged LHA}"),
+    Angle('jet_width_charged', 1, 1, "Charged Width", "#lambda_{1}^{1}", 861, r"\text{Charged Width}"),
+    Angle('jet_thrust_charged', 1, 2, "Charged Thrust", "#lambda_{2}^{1}", 617, r"\text{Charged Thrust}"),
+    Angle("jet_puppiMultiplicity_charged", 0, 0, "Charged Multiplicity", "#lambda_{0}^{0}", 2, r"\text{Charged Multiplicity}"),
+    Angle('jet_pTD_charged', 2, 0, "Charged (p_{T}^{D})^{2}", "#lambda_{0}^{2}", 418, r"\text{Charged}~(p_{T}^{D})^{2}"),
     # Angle('jet_multiplicity', 0, 0, "Multiplicity", "#lambda_{0}^{0}", 2),  # leave last as we don't want it in our RIVET numbering
     Angle('jet_flavour', 0, 0, "Flavour", "PDGID", 7, r"\text{Flavour}"),
     Angle("jet_genParton_flavour", 0, 0, "Flavour", "PDGID", 8, r"\text{Flavour}")
