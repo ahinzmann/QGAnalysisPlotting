@@ -812,7 +812,11 @@ class SummaryPlotter(object):
         graphs=[]
         for e in plot.contributions:
           graphs+=[ROOT.TGraphErrors(e.obj)]
-          graphs[-1].Draw("P SAME")
+          graphs[-1].Draw("PZ SAME")
+          ROOT.gStyle.SetErrorX(0)
+          graphs+=[ROOT.TGraphErrors(e.obj)]
+          graphs[-1].Draw("|| SAME")
+          ROOT.gStyle.SetErrorX(0.5)
 
         #print("NAME: ",angle.var.replace("jet_",""),region_name,jet_algo['label'])
         #datag=plot.contributions[-1].obj
@@ -901,7 +905,11 @@ class SummaryPlotter(object):
               graphs[-1].Draw("2P SAME")
             for e in plot.subplot_contributions:
               graphs+=[ROOT.TGraphErrors(e)]
-              graphs[-1].Draw("P SAME")
+              graphs[-1].Draw("PZ SAME")
+              ROOT.gStyle.SetErrorX(0)
+              graphs+=[ROOT.TGraphErrors(e)]
+              graphs[-1].Draw("|| SAME")
+              ROOT.gStyle.SetErrorX(0.5)
 
             plot.subplot_legend.Draw()
             plot.canvas.cd()
@@ -1652,7 +1660,7 @@ class SummaryPlotter(object):
         latex_height = 1 - pad_offset_top - (pads[0].GetAbsHNDC() * pads[0].GetTopMargin()) + 0.02
 
         # Want it to start at the left edge of the first plot
-        start_x = left_margin + (pad_width*pad_left_margin) + 0.03
+        start_x = left_margin + (pad_width*pad_left_margin) + 0.04
         # # start_x = 100
         is_supplementary = True
         if self.is_preliminary:
@@ -2068,10 +2076,11 @@ class SummaryPlotter(object):
 
             # Draw hists - reverse order, so data on top
             for ind, hist in enumerate(upper_hist_group[::-1]):
-                draw_opt = "E1"
+                draw_opt = "E1 X0"
                 if ind != 0:
                     draw_opt += " SAME"
                 hist.Draw(draw_opt)
+                hist.Draw("E SAME")
 
             upper_draw_hist = upper_hist_group[-1]
             # remove x axis label
@@ -2113,7 +2122,7 @@ class SummaryPlotter(object):
             # DO LOWER ROW
             # ------------
             lower_pad.cd()
-            draw_opt = "E1"
+            draw_opt = "E1 X0"
             for ind, hist in enumerate(lower_hist_group[::-1][:1]):
                 if hist.GetFillStyle()==3395:
                     hist_upper=hist.Clone(hist.GetTitle()+"upper")
@@ -2143,8 +2152,10 @@ class SummaryPlotter(object):
                     hist.Draw("AXIS SAME")
                 else:
                     hist.Draw(draw_opt)
+                    hist.Draw("E SAME")
             for ind, hist in enumerate(lower_hist_group[::-1][1:]):
                 hist.Draw(draw_opt + " SAME")
+                hist.Draw("E SAME")
 
             lower_draw_hist = lower_hist_group[-1]
             xax = lower_draw_hist.GetXaxis()
@@ -2180,6 +2191,7 @@ class SummaryPlotter(object):
                 # now draw all the other hists
                 for ind, hist in enumerate(lower_hist_group):
                     hist.Draw(draw_opt + "SAME")
+                    hist.Draw("E SAME")
 
             xax.CenterLabels()
             xax.LabelsOption("v")

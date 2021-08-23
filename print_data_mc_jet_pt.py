@@ -134,7 +134,11 @@ def do_jet_pt_plot(entries,
 
         for e in [p.obj for p in plot.contributions[1:]]+[data_hist]:
            graphs+=[ROOT.TGraphErrors(e)]
-           graphs[-1].Draw("P SAME")
+           graphs[-1].Draw("PZ SAME")
+           ROOT.gStyle.SetErrorX(0)
+           graphs+=[ROOT.TGraphErrors(e)]
+           graphs[-1].Draw("|| SAME")
+           ROOT.gStyle.SetErrorX(0.5)
 
         # Create dummy graphs with the same styling to put into the legend
         # Using graphs we can get the correct endings on the TLegend entries (!)
@@ -244,7 +248,11 @@ def do_jet_pt_plot(entries,
 
         for e in plot.subplot_contributions:
            graphs+=[ROOT.TGraphErrors(e)]
-           graphs[-1].Draw("E SAME")
+           graphs[-1].Draw("Z SAME")
+           ROOT.gStyle.SetErrorX(0)
+           graphs+=[ROOT.TGraphErrors(e)]
+           graphs[-1].Draw("|| SAME")
+           ROOT.gStyle.SetErrorX(0.5)
         for e in [data_total_ratio]:
            graphs+=[ROOT.TGraphErrors(e)]
            graphs[-1].Draw("E2 SAME ][")

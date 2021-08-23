@@ -602,6 +602,10 @@ class GenPtBinnedPlotter(BinnedPlotter):
             if do_chi2:
                 # print("unfolded_alt_truth bin", ibin)
                 ematrix = self.hist_bin_chopper.get_pt_bin_normed_div_bin_width(self.unfolder.total_ematrix_name, **hbc_args)
+                print("Correlation,", str(bin_edge_low)+" < PT < "+str(bin_edge_high)+" GeV")
+                print(str([[unfolded_hist_bin_total_errors.GetXaxis().GetBinLowEdge(i+1),unfolded_hist_bin_total_errors.GetXaxis().GetBinUpEdge(i+1)]\
+                          for i in range(unfolded_hist_bin_total_errors.GetNbinsX())]).replace("[","").replace("]","\n").replace(",",""))
+                print(str(cu.th2_to_ndarray(ematrix)[0]).replace("[","").replace("]","").replace(",",""))
                 # stats are chi2, ndof, p
                 mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, mc_gen_hist_bin, ematrix)
                 alt_mc_stats = calc_chi2_stats(unfolded_hist_bin_total_errors, alt_mc_gen_hist_bin, ematrix)

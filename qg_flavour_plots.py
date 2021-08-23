@@ -247,7 +247,7 @@ def compare_flavour_fractions_vs_pt(input_files,
              is_preliminary=is_preliminary)
     p.default_canvas_size = (600, 600)
     try:
-        p.plot("AP")
+        p.plot("APZ")
         p.main_pad.SetBottomMargin(0.16)
         p.get_modifier().GetXaxis().SetTitleOffset(1.4)
         p.get_modifier().GetXaxis().SetTitleSize(.045)
