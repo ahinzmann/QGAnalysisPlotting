@@ -598,6 +598,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
             this_theory_style = deepcopy(theory_style)
             this_theory_style_legend = deepcopy(theory_style_legend)
 
+            max_rel_err = 0.9 # 0.5 if "multiplicity" in self.setup.angle.var.lower() else -1
+
             # Calculate chi2 between data and MCs if desired
             if do_chi2:
                 # print("unfolded_alt_truth bin", ibin)
@@ -613,7 +615,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 # print(mc_stats)
                 # print(alt_mc_stats)
                 nbins = sum([1 for i in range(1, unfolded_hist_bin_total_errors.GetNbinsX()+1)
-                             if unfolded_hist_bin_total_errors.GetBinContent(i) != 0])
+                             if unfolded_hist_bin_total_errors.GetBinContent(i) != 0 and \
+                             unfolded_hist_bin_total_errors.GetBinError(i)/unfolded_hist_bin_total_errors.GetBinContent(i) < max_rel_err])
                 # reduced_chi2 = mc_stats[0] / nbins
                 # alt_reduced_chi2 = alt_mc_stats[0] / nbins
 
@@ -644,12 +647,12 @@ class GenPtBinnedPlotter(BinnedPlotter):
             ymin = 0
             #if np.any(cu.th1_to_ndarray(unfolded_hist_bin_total_errors)[0] < 0):
             #    ymin = None  # let it do its thing and auto calc ymin
-            max_rel_err = 0.5 if "multiplicity" in self.setup.angle.var.lower() else -1
+            max_x = qgp.calc_auto_xlim(entries[2:3], max_rel_err=max_rel_err)[1]
             plot = Plot(entries,
                         ytitle=self.setup.pt_bin_normalised_differential_label,
                         title=self.get_pt_bin_title(bin_edge_low, bin_edge_high),
                         legend=True,
-                        xlim=[bins[0],qgp.calc_auto_xlim(entries[2:3], max_rel_err=0.9)[1]],  # set x lim to where data is non-0 ### ANDREAS changed from 0.5
+                        xlim=[bins[0],max_x],  # set x lim to where data is non-0 ### ANDREAS changed from 0.5
                         ylim=[ymin, None],
                         **self.pt_bin_plot_args)
 
