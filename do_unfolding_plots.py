@@ -557,20 +557,29 @@ class GenPtBinnedPlotter(BinnedPlotter):
             theory_hist_bin_lower = unfolded_hist_bin_total_errors.Clone()  # clone to avoid restyling the original as well
             var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
             		"jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(self.setup.angle.var)+1
-            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            #if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            if var_number in [3,4,5,8,9,10]:
               for post in ["_fix",""]:
-                theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
-                theory_file+="data_R"+self.setup.jet_algo[-1]+"/"
-                theory_file+="RSIG_THR_RES_NP_"
-                theory_file+="d"+("1" if "4" in self.setup.jet_algo else "2")+("2" if "groomed" in self.setup.region['name'] else "1")+"-"
+                #theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                #theory_file+="data_R"+self.setup.jet_algo[-1]+"/"
+                #theory_file+="RSIG_THR_RES_NP_"
+                if "Z" in self.region['label']:
+                  theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/ZJResults/"
+                else:
+                  theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/DijetResults/"
+                theory_file+="d"+("1" if "4" in self.setup.jet_algo else "2")+\
+                                 (str(2+2*("forward" in self.region['label'])) if "groomed" in self.setup.region['name'] else str(1+2*("forward" in self.region['label'])))+"-"
                 theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
                 theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
                 theory_file+=".dat"
                 if os.path.exists(theory_file): break
-                print(theory_file)
+              print(theory_file)
               igenbin=0
+              startReading=False
               for line in open(theory_file).readlines():
-                if line.count(".")==5:
+                if "NLL" in line: startReading=True # New Dijet theory
+                if "SH-MC@NLO" in line: break # New Dijet theory
+                if line.count(".")==5 and startReading:
                   igenbin+=1
                   theory_hist_bin.SetBinContent(igenbin, float(line.split("\t")[2]))
                   theory_hist_bin.SetBinError(igenbin, 1e-100)
@@ -630,7 +639,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 Contribution(mc_gen_hist_bin, subplot=data_no_errors, **this_mc_style),
                 Contribution(alt_mc_gen_hist_bin, subplot=data_no_errors, **this_alt_mc_style),
             ]
-            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            #if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            if var_number in [3,4,5,8,9,10]:
               mc_entries += [Contribution(theory_hist_bin, subplot=data_no_errors, **this_theory_style) ]
 
             entries = [
@@ -701,7 +711,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
             plot.container.SetMinimum(0)
 
             plot.main_pad.cd()
-            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            #if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            if var_number in [3,4,5,8,9,10]:
               theory_hist_bin_upper.SetFillStyle(3395)
               theory_hist_bin_upper.SetFillColor(ROOT.kRed-9)
               theory_hist_bin_upper.SetLineWidth(0)
@@ -756,7 +767,8 @@ class GenPtBinnedPlotter(BinnedPlotter):
             # (we may want to rethink this later?)
             plot.subplot_pad.cd()
 
-            if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            #if "Z" in self.region['label'] and var_number in [3,4,5,8,9,10]:
+            if var_number in [3,4,5,8,9,10]:
               theory_hist_bin_upper_ratio = theory_hist_bin_upper.Clone()
               theory_hist_bin_upper_ratio.Divide(data_no_errors)
               theory_hist_bin_upper_ratio.Draw("F SAME")

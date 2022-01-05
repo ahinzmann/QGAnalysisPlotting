@@ -242,17 +242,87 @@ class SummaryPlotter(object):
         dijet_central_hist_no_errors = None
         dijet_central_hist_truth = None
         dijet_central_hist_alt_truth = None
+        dijet_central_hist_theory = None
+        dijet_central_hist_sherpa = None
         dijet_central_hist = None
         dijet_central_hist_ratio_error = None
         if do_dijet_cen:
             region_name = 'Dijet_central'
             if do_groomed:
                 region_name += "_groomed"
+            pt_bins = self.pt_bins_dijet[:]
             dijet_central_data = df[mask & (df['region'] == region_name)]
 
             if not self.only_yoda_data:
                 dijet_central_hist_truth = self.data_to_hist(dijet_central_data['%s_truth' % metric], dijet_central_data['%s_err_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
                 dijet_central_hist_alt_truth = self.data_to_hist(dijet_central_data['%s_alt_truth' % metric], dijet_central_data['%s_err_alt_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
+                #### HERE IS WHERE ANDREAS ADDED THE THEORY
+                ### GET THEORY CURVE
+                dijet_central_hist_theory = dijet_central_hist_truth.Clone()
+                dijet_central_hist_theory_error = dijet_central_hist_truth.Clone()
+                dijet_central_hist_theory_upper = dijet_central_hist_truth.Clone()
+                dijet_central_hist_theory_lower = dijet_central_hist_truth.Clone()
+                dijet_central_hist_sherpa_error = dijet_central_hist_truth.Clone()
+                var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
+            		"jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(angle.var)+1
+                if var_number in [3,4,5,8,9,10]:
+                 angle_output_dir = "%s/%s/%s" % ("/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/trees/unfolded_ak"+jet_algo['label'][-1]+"puppi", region_name, angle.var)
+                 root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
+                 import uproot
+                 uproot_file = uproot.open(root_filename)
+                 unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, region_name, angle.var, pt_bins[min_pt_bin_ind:])
+                 #for ibin in range(len(pt_bins[min_pt_bin_ind:])-1):
+                 if True:
+                  #print(min_pt_bin_ind, ibin)
+                  for post in ["_fix",""]:
+                    #theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    #theory_file+="data_R"+jet_algo['label'][-1]+"/"
+                    #theory_file+="RSIG_THR_RES_NP_"
+                    theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/DijetAverages/"
+                    theory_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
+                    theory_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                    #theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    theory_file+=".dat"
+                    if os.path.exists(theory_file): break
+                  print(theory_file)
+                  igenbin=0
+                  startReading=False
+                  for line in open(theory_file).readlines():
+                    if "NLL" in line: startReading=True # New Dijet theory
+                    if "SH-MC@NLO" in line: break # New Dijet theory
+                    if line.count(".")==5 and startReading:
+                      igenbin+=1
+                      if igenbin<1: continue
+                      dijet_central_hist_theory.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      dijet_central_hist_theory.SetBinError(igenbin, 1e-100)
+                      dijet_central_hist_theory_error.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      dijet_central_hist_theory_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
+                      dijet_central_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                      dijet_central_hist_theory_upper.SetBinError(igenbin, 0)
+                      dijet_central_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                      dijet_central_hist_theory_lower.SetBinError(igenbin, 0)
+
+                  for post in ["_fix",""]:
+                    #sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    #sherpa_file+="data_R"+jet_algo['label'][-1]+"/"
+                    #sherpa_file+="SIG_SRP_NP_"
+                    sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/DijetAverages/"
+                    sherpa_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
+                    sherpa_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                    #sherpa_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    sherpa_file+=".dat"
+                    if os.path.exists(sherpa_file): break
+                  #print(sherpa_file)
+                  igenbin=-min_pt_bin_ind
+                  startReading=False
+                  for line in open(sherpa_file).readlines():
+                    if "SH-MC@NLO" in line: startReading=True # New Dijet theory
+                    if line.count(".")==5 and startReading:
+                      igenbin+=1
+                      if igenbin<1: continue
+                      dijet_central_hist_sherpa_error.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      dijet_central_hist_sherpa_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
+            
 
             for sample in self.other_samples:
                 hist = self.data_to_hist(dijet_central_data['%s_%s' % (metric, sample['key'])], dijet_central_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet[min_pt_bin_ind:])
@@ -280,17 +350,87 @@ class SummaryPlotter(object):
         dijet_forward_hist_no_errors = None
         dijet_forward_hist_truth = None
         dijet_forward_hist_alt_truth = None
+        dijet_forward_hist_theory = None
+        dijet_forward_hist_sherpa = None
         dijet_forward_hist = None
         dijet_forward_hist_ratio_error = None
         if do_dijet_fwd:
             region_name = 'Dijet_forward'
             if do_groomed:
                 region_name += "_groomed"
+            pt_bins = self.pt_bins_dijet[:]
             dijet_forward_data = df[mask & (df['region'] == region_name)]
 
             if not self.only_yoda_data:
                 dijet_forward_hist_truth = self.data_to_hist(dijet_forward_data['%s_truth' % metric], dijet_forward_data['%s_err_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
                 dijet_forward_hist_alt_truth = self.data_to_hist(dijet_forward_data['%s_alt_truth' % metric], dijet_forward_data['%s_err_alt_truth' % metric], self.pt_bins_dijet[min_pt_bin_ind:])
+                #### HERE IS WHERE ANDREAS ADDED THE THEORY
+                ### GET THEORY CURVE
+                dijet_forward_hist_theory = dijet_forward_hist_truth.Clone()
+                dijet_forward_hist_theory_error = dijet_forward_hist_truth.Clone()
+                dijet_forward_hist_theory_upper = dijet_forward_hist_truth.Clone()
+                dijet_forward_hist_theory_lower = dijet_forward_hist_truth.Clone()
+                dijet_forward_hist_sherpa_error = dijet_forward_hist_truth.Clone()
+                var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
+            		"jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(angle.var)+1
+                if var_number in [3,4,5,8,9,10]:
+                 angle_output_dir = "%s/%s/%s" % ("/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/trees/unfolded_ak"+jet_algo['label'][-1]+"puppi", region_name, angle.var)
+                 root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
+                 import uproot
+                 uproot_file = uproot.open(root_filename)
+                 unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, region_name, angle.var, pt_bins[min_pt_bin_ind:])
+                 #for ibin in range(len(pt_bins[min_pt_bin_ind:])-1):
+                 if True:
+                  #print(min_pt_bin_ind, ibin)
+                  for post in ["_fix",""]:
+                    #theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    #theory_file+="data_R"+jet_algo['label'][-1]+"/"
+                    #theory_file+="RSIG_THR_RES_NP_"
+                    theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/DijetAverages/"
+                    theory_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("4" if do_groomed else "3")+"-"
+                    theory_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                    #theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    theory_file+=".dat"
+                    if os.path.exists(theory_file): break
+                  #print(theory_file)
+                  igenbin=0
+                  startReading=False
+                  for line in open(theory_file).readlines():
+                    if "NLL" in line: startReading=True # New Dijet theory
+                    if "SH-MC@NLO" in line: break # New Dijet theory
+                    if line.count(".")==5 and startReading:
+                      igenbin+=1
+                      if igenbin<1: continue
+                      dijet_forward_hist_theory.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      dijet_forward_hist_theory.SetBinError(igenbin, 1e-100)
+                      dijet_forward_hist_theory_error.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      dijet_forward_hist_theory_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
+                      dijet_forward_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                      dijet_forward_hist_theory_upper.SetBinError(igenbin, 0)
+                      dijet_forward_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                      dijet_forward_hist_theory_lower.SetBinError(igenbin, 0)
+
+                  for post in ["_fix",""]:
+                    #sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    #sherpa_file+="data_R"+jet_algo['label'][-1]+"/"
+                    #sherpa_file+="SIG_SRP_NP_"
+                    sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/DijetAverages/"
+                    sherpa_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("4" if do_groomed else "3")+"-"
+                    sherpa_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                    #sherpa_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    sherpa_file+=".dat"
+                    if os.path.exists(sherpa_file): break
+                  #print(sherpa_file)
+                  igenbin=-min_pt_bin_ind
+                  startReading=False
+                  for line in open(sherpa_file).readlines():
+                    if "SH-MC@NLO" in line: startReading=True # New Dijet theory
+                    if line.count(".")==5 and startReading:
+                      igenbin+=1
+                      if igenbin<1: continue
+                      dijet_forward_hist_sherpa_error.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      dijet_forward_hist_sherpa_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
+            
 
             for sample in self.other_samples:
                 hist = self.data_to_hist(dijet_forward_data['%s_%s' % (metric, sample['key'])], dijet_forward_data['%s_err_%s' % (metric, sample['key'])], self.pt_bins_dijet[min_pt_bin_ind:])
@@ -344,67 +484,87 @@ class SummaryPlotter(object):
                  import uproot
                  uproot_file = uproot.open(root_filename)
                  unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, region_name, angle.var, pt_bins[min_pt_bin_ind:])
-                 for ibin in range(len(pt_bins[min_pt_bin_ind:])-1):
-                  errors=np.ndarray(1)
-                  areas=np.ndarray(1)
-                  centers=np.ndarray(1)
-                  errors=np.delete(errors,0)
-                  areas=np.delete(areas,0)
-                  centers=np.delete(centers,0)
+                 #for ibin in range(len(pt_bins[min_pt_bin_ind:])-1):
+                 if True:
+                  #errors=np.ndarray(1)
+                  #areas=np.ndarray(1)
+                  #centers=np.ndarray(1)
+                  #errors=np.delete(errors,0)
+                  #areas=np.delete(areas,0)
+                  #centers=np.delete(centers,0)
                   #print(min_pt_bin_ind, ibin)
                   for post in ["_fix",""]:
-                    theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
-                    theory_file+="data_R"+jet_algo['label'][-1]+"/"
-                    theory_file+="RSIG_THR_RES_NP_"
+                    #theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    #theory_file+="data_R"+jet_algo['label'][-1]+"/"
+                    #theory_file+="RSIG_THR_RES_NP_"
+                    theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/ZJAverages/"
                     theory_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
-                    theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
-                    theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    theory_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                    #theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
                     theory_file+=".dat"
                     if os.path.exists(theory_file): break
                   #print(theory_file)
                   igenbin=0
+                  startReading=False
                   for line in open(theory_file).readlines():
-                    if line.count(".")==5:
+                    if "NLL" in line: startReading=True # New Dijet theory
+                    if "SH-MC@NLO" in line: break # New Dijet theory
+                    if line.count(".")==5 and startReading:
                       igenbin+=1
-                      width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
-                      errors=np.append(errors,float(line.split("\t")[3])*width)
-                      areas=np.append(areas,float(line.split("\t")[2])*width)
-                      centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
-                      assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
-                  mean = metrics.calc_mean_jax(areas, centers)
-                  err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
-                  zpj_hist_theory.SetBinContent(ibin+1,mean)
-                  zpj_hist_theory.SetBinError(ibin+1,1e-100)
-                  zpj_hist_theory_error.SetBinContent(ibin+1,mean)
-                  zpj_hist_theory_error.SetBinError(ibin+1,err)
-                  zpj_hist_theory_upper.SetBinContent(ibin+1,mean+err)
-                  zpj_hist_theory_upper.SetBinError(ibin+1,0)
-                  zpj_hist_theory_lower.SetBinContent(ibin+1,mean-err)
-                  zpj_hist_theory_lower.SetBinError(ibin+1,0)
+                      if igenbin<1: continue
+                      zpj_hist_theory.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      zpj_hist_theory.SetBinError(igenbin, 1e-100)
+                      zpj_hist_theory_error.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      zpj_hist_theory_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
+                      zpj_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                      zpj_hist_theory_upper.SetBinError(igenbin, 0)
+                      zpj_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                      zpj_hist_theory_lower.SetBinError(igenbin, 0)
+                      #width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
+                      #errors=np.append(errors,float(line.split("\t")[3])*width)
+                      #areas=np.append(areas,float(line.split("\t")[2])*width)
+                      #centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
+                      #assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
+                  #mean = metrics.calc_mean_jax(areas, centers)
+                  #err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
+                  #zpj_hist_theory.SetBinContent(ibin+1,mean)
+                  #zpj_hist_theory.SetBinError(ibin+1,1e-100)
+                  #zpj_hist_theory_error.SetBinContent(ibin+1,mean)
+                  #zpj_hist_theory_error.SetBinError(ibin+1,err)
+                  #zpj_hist_theory_upper.SetBinContent(ibin+1,mean+err)
+                  #zpj_hist_theory_upper.SetBinError(ibin+1,0)
+                  #zpj_hist_theory_lower.SetBinContent(ibin+1,mean-err)
+                  #zpj_hist_theory_lower.SetBinError(ibin+1,0)
 
                   for post in ["_fix",""]:
-                    sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
-                    sherpa_file+="data_R"+jet_algo['label'][-1]+"/"
-                    sherpa_file+="SIG_SRP_NP_"
+                    #sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                    #sherpa_file+="data_R"+jet_algo['label'][-1]+"/"
+                    #sherpa_file+="SIG_SRP_NP_"
+                    sherpa_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/ZJAverages/"
                     sherpa_file+="d"+("1" if "4" in jet_algo['label'] else "2")+("2" if do_groomed else "1")+"-"
-                    sherpa_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
-                    sherpa_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                    sherpa_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                    #sherpa_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
                     sherpa_file+=".dat"
                     if os.path.exists(sherpa_file): break
                   #print(sherpa_file)
-                  igenbin=0
+                  igenbin=-min_pt_bin_ind
+                  startReading=False
                   for line in open(sherpa_file).readlines():
-                    if line.count(".")==5:
+                    if "SH-MC@NLO" in line: startReading=True # New Dijet theory
+                    if line.count(".")==5 and startReading:
                       igenbin+=1
-                      width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
-                      errors=np.append(errors,float(line.split("\t")[3])*width)
-                      areas=np.append(areas,float(line.split("\t")[2])*width)
-                      centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
-                      assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
-                  mean = metrics.calc_mean_jax(areas, centers)
-                  err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
-                  zpj_hist_sherpa_error.SetBinContent(ibin+1,mean)
-                  zpj_hist_sherpa_error.SetBinError(ibin+1,err)
+                      if igenbin<1: continue
+                      zpj_hist_sherpa_error.SetBinContent(igenbin, float(line.split("\t")[2]))
+                      zpj_hist_sherpa_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
+                      #width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
+                      #errors=np.append(errors,float(line.split("\t")[3])*width)
+                      #areas=np.append(areas,float(line.split("\t")[2])*width)
+                      #centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
+                      #assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
+                  #mean = metrics.calc_mean_jax(areas, centers)
+                  #err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
+                  #zpj_hist_sherpa_error.SetBinContent(ibin+1,mean)
+                  #zpj_hist_sherpa_error.SetBinError(ibin+1,err)
             
             for sample in self.other_samples:
                 key = sample['key']
@@ -442,7 +602,7 @@ class SummaryPlotter(object):
         if not self.only_yoda_data:
             # Add nominal MC
             if do_dijet_cen:
-                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_CEN_LABEL.replace(" region", ""), self.mc_label),
+                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_CEN_LABEL.replace(" region", ""), mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -455,7 +615,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_dijet_fwd:
-                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_FWD_LABEL.replace(" region", ""), self.mc_label),
+                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.Dijet_FWD_LABEL.replace(" region", ""), mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -468,7 +628,7 @@ class SummaryPlotter(object):
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
             if do_zpj:
-                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.ZpJ_LABEL.replace(" region", ""), self.mc_label),
+                cont_args = dict(label=mc_label if only_one_region else '#splitline{ %s  }{ [%s]}' % (qgc.ZpJ_LABEL.replace(" region", ""), mc_label),
                                  line_color=COMMON_STYLE_DICT['mc_color'],
                                  line_width=lw,
                                  line_style=COMMON_STYLE_DICT['mc_line_style'],
@@ -540,6 +700,42 @@ class SummaryPlotter(object):
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
+        if not self.only_yoda_data:
+            if do_dijet_cen:
+                if var_number in [3,4,5,8,9,10] and metric != 'delta':
+                  cont_args = dict(label="Sherpa NLO+jet",
+                                   line_color=ROOT.kGray+2,
+                                   line_width=lw,
+                                   line_style=1,
+                                   marker_color=ROOT.kGray+2,
+                                   marker_style=27,
+                                   marker_size=m_size,
+                                   fill_color=ROOT.kGray+2,
+                                   fill_style=0,
+                                   leg_draw_opt="LEP",
+                                   subplot=dijet_central_hist_no_errors)
+                  if self.is_supplementary:                 
+                    entries.append(Contribution(dijet_central_hist_sherpa_error, **cont_args))
+                    dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
+                  cont_args = dict(label="NLO + NLL'+ NP",
+                                   line_color=ROOT.kRed-9,
+                                   line_width=lw,
+                                   line_style=1,
+                                   marker_color=ROOT.kRed-9,
+                                   marker_style=1,
+                                   marker_size=0,
+                                   fill_color=ROOT.kRed-9,
+                                   fill_style=0,
+                                   leg_draw_opt="L",
+                                   subplot=dijet_central_hist_no_errors)
+                  theory_style_legend = cont_args.copy()
+                  theory_style_legend["fill_color"]=ROOT.kRed-9
+                  theory_style_legend["fill_style"]=3395
+                  theory_style_legend["leg_draw_opt"]="FL"
+                  entries.append(Contribution(dijet_central_hist_theory, **cont_args))
+                  dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
+                  
         # Add other samples: dijet fwd
         if do_dijet_fwd:
             marker = cu.Marker(shape='triangleDown')
@@ -560,6 +756,42 @@ class SummaryPlotter(object):
                 entries.append(Contribution(hist, **cont_args))
                 dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
 
+        if not self.only_yoda_data:
+            if do_dijet_fwd:
+                if var_number in [3,4,5,8,9,10] and metric != 'delta':
+                  cont_args = dict(label="Sherpa NLO+jet",
+                                   line_color=ROOT.kGray+2,
+                                   line_width=lw,
+                                   line_style=1,
+                                   marker_color=ROOT.kGray+2,
+                                   marker_style=27,
+                                   marker_size=m_size,
+                                   fill_color=ROOT.kGray+2,
+                                   fill_style=0,
+                                   leg_draw_opt="LEP",
+                                   subplot=dijet_forward_hist_no_errors)
+                  if self.is_supplementary:                 
+                    entries.append(Contribution(dijet_forward_hist_sherpa_error, **cont_args))
+                    dummy_entries.append(Contribution(dummy_gr.Clone(), **cont_args))
+
+                  cont_args = dict(label="NLO + NLL'+ NP",
+                                   line_color=ROOT.kRed-9,
+                                   line_width=lw,
+                                   line_style=1,
+                                   marker_color=ROOT.kRed-9,
+                                   marker_style=1,
+                                   marker_size=0,
+                                   fill_color=ROOT.kRed-9,
+                                   fill_style=0,
+                                   leg_draw_opt="L",
+                                   subplot=dijet_forward_hist_no_errors)
+                  theory_style_legend = cont_args.copy()
+                  theory_style_legend["fill_color"]=ROOT.kRed-9
+                  theory_style_legend["fill_style"]=3395
+                  theory_style_legend["leg_draw_opt"]="FL"
+                  entries.append(Contribution(dijet_forward_hist_theory, **cont_args))
+                  dummy_entries.append(Contribution(dummy_gr.Clone(), **theory_style_legend))
+                  
         # Add other samples: Z+jet
         if do_zpj:
             marker = cu.Marker(shape='triangleDown')
@@ -584,13 +816,13 @@ class SummaryPlotter(object):
             if do_zpj:
                 if var_number in [3,4,5,8,9,10] and metric != 'delta':
                   cont_args = dict(label="Sherpa NLO+jet",
-                                   line_color=ROOT.kGray,
+                                   line_color=ROOT.kGray+2,
                                    line_width=lw,
                                    line_style=1,
-                                   marker_color=ROOT.kGray,
+                                   marker_color=ROOT.kGray+2,
                                    marker_style=27,
                                    marker_size=m_size,
-                                   fill_color=ROOT.kGray,
+                                   fill_color=ROOT.kGray+2,
                                    fill_style=0,
                                    leg_draw_opt="LEP",
                                    subplot=zpj_hist_no_errors)
@@ -809,6 +1041,34 @@ class SummaryPlotter(object):
           ROOT.gStyle.SetNdivisions(510,"Y")
           zpj_hist_no_errors.Draw("AXIS SAME")
           plot.container.Draw("NOSTACK E1 A SAME")
+        if do_dijet_cen and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
+          dijet_central_hist_theory_upper.SetFillStyle(3395)
+          dijet_central_hist_theory_upper.SetFillColor(ROOT.kRed-9)
+          dijet_central_hist_theory_upper.SetLineWidth(0)
+          dijet_central_hist_theory_upper.SetMarkerSize(0)
+          dijet_central_hist_theory_upper.Draw("F SAME")
+          dijet_central_hist_theory_lower.SetFillStyle(1001)
+          dijet_central_hist_theory_lower.SetFillColor(10)
+          dijet_central_hist_theory_lower.SetLineWidth(0)
+          dijet_central_hist_theory_lower.SetMarkerSize(0)
+          dijet_central_hist_theory_lower.Draw("F SAME")
+          ROOT.gStyle.SetNdivisions(510,"Y")
+          dijet_central_hist_no_errors.Draw("AXIS SAME")
+          plot.container.Draw("NOSTACK E1 A SAME")
+        if do_dijet_fwd and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
+          dijet_forward_hist_theory_upper.SetFillStyle(3395)
+          dijet_forward_hist_theory_upper.SetFillColor(ROOT.kRed-9)
+          dijet_forward_hist_theory_upper.SetLineWidth(0)
+          dijet_forward_hist_theory_upper.SetMarkerSize(0)
+          dijet_forward_hist_theory_upper.Draw("F SAME")
+          dijet_forward_hist_theory_lower.SetFillStyle(1001)
+          dijet_forward_hist_theory_lower.SetFillColor(10)
+          dijet_forward_hist_theory_lower.SetLineWidth(0)
+          dijet_forward_hist_theory_lower.SetMarkerSize(0)
+          dijet_forward_hist_theory_lower.Draw("F SAME")
+          ROOT.gStyle.SetNdivisions(510,"Y")
+          dijet_forward_hist_no_errors.Draw("AXIS SAME")
+          plot.container.Draw("NOSTACK E1 A SAME")
         graphs=[]
         for e in plot.contributions:
           graphs+=[ROOT.TGraphErrors(e.obj)]
@@ -875,6 +1135,24 @@ class SummaryPlotter(object):
               zpj_hist_theory_lower_ratio.Divide(zpj_hist_no_errors)
               zpj_hist_theory_lower_ratio.Draw("F SAME")
               #zpj_hist_no_errors.Draw("AXIS SAME")
+              plot.subplot_pad.RedrawAxis()
+            if do_dijet_cen and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
+              dijet_central_hist_theory_upper_ratio = dijet_central_hist_theory_upper.Clone()
+              dijet_central_hist_theory_upper_ratio.Divide(dijet_central_hist_no_errors)
+              dijet_central_hist_theory_upper_ratio.Draw("F SAME")
+              dijet_central_hist_theory_lower_ratio = dijet_central_hist_theory_lower.Clone()
+              dijet_central_hist_theory_lower_ratio.Divide(dijet_central_hist_no_errors)
+              dijet_central_hist_theory_lower_ratio.Draw("F SAME")
+              #dijet_central_hist_no_errors.Draw("AXIS SAME")
+              plot.subplot_pad.RedrawAxis()
+            if do_dijet_fwd and not self.only_yoda_data and var_number in [3,4,5,8,9,10] and metric != 'delta':
+              dijet_forward_hist_theory_upper_ratio = dijet_forward_hist_theory_upper.Clone()
+              dijet_forward_hist_theory_upper_ratio.Divide(dijet_forward_hist_no_errors)
+              dijet_forward_hist_theory_upper_ratio.Draw("F SAME")
+              dijet_forward_hist_theory_lower_ratio = dijet_forward_hist_theory_lower.Clone()
+              dijet_forward_hist_theory_lower_ratio.Divide(dijet_forward_hist_no_errors)
+              dijet_forward_hist_theory_lower_ratio.Draw("F SAME")
+              #dijet_forward_hist_no_errors.Draw("AXIS SAME")
               plot.subplot_pad.RedrawAxis()
             
             draw_opt = "E2 SAME"
@@ -1166,6 +1444,15 @@ class SummaryPlotter(object):
                          marker_size=COMMON_STYLE_DICT['marker_size'],
                          marker_style=COMMON_STYLE_DICT['mc_alt_marker_style'])
 
+    def _style_sherpa_hist(self, hist):
+        self._style_hist(hist,
+                         line_style=COMMON_STYLE_DICT['mc_line_style'],
+                         color=ROOT.kGray+2,
+                         fill_style=COMMON_STYLE_DICT['mc_fill_style'],
+                         fill_color=ROOT.kGray+2,
+                         marker_size=COMMON_STYLE_DICT['marker_size'],
+                         marker_style=27)
+
     def _style_theory_hist(self, hist):
         self._style_hist(hist,
                          line_style=1,
@@ -1210,6 +1497,7 @@ class SummaryPlotter(object):
             mean_entries_mc = []
             mean_entries_alt_mc = []
             mean_entries_theory = []
+            mean_entries_sherpa = []
             # each top-level index is a sample
             mean_entries_other_samples = [[] for _ in self.other_samples]  # for loop needed to create indepedent lists
 
@@ -1239,6 +1527,9 @@ class SummaryPlotter(object):
                     var_number=["jet_puppiMultiplicity", "jet_pTD","jet_LHA", "jet_width", "jet_thrust", 
                             "jet_puppiMultiplicity_charged", "jet_pTD_charged", "jet_LHA_charged", "jet_width_charged", "jet_thrust_charged"].index(query.split('"')[-2])+1
                     ibin=int(query.split('&')[1].split("=")[-1])
+                    min_pt_bin_ind=self.min_pt_bin_ind_ak4
+                    if "8" in query.split('"')[1]:
+                      min_pt_bin_ind=self.min_pt_bin_ind_ak8
                     if "ZPlusJets" in query and var_number in [3,4,5,8,9,10]:
                      angle_output_dir = "%s/%s/%s" % ("/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/trees/unfolded_ak"+query.split('"')[1][2]+"puppi", query.split('"')[-4], query.split('"')[-2])
                      root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
@@ -1246,36 +1537,86 @@ class SummaryPlotter(object):
                      uproot_file = uproot.open(root_filename)
                      #print(root_filename, query.split('"')[-4], query.split('"')[-2], self.pt_bins_zpj[(0 if "4" in query.split('"')[1] else 2):])
                      unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, query.split('"')[-4], query.split('"')[-2], self.pt_bins_zpj[(0 if "4" in query.split('"')[1] else 2):])
-                     errors=np.ndarray(1)
-                     areas=np.ndarray(1)
-                     centers=np.ndarray(1)
-                     errors=np.delete(errors,0)
-                     areas=np.delete(areas,0)
-                     centers=np.delete(centers,0)
+                     #errors=np.ndarray(1)
+                     #areas=np.ndarray(1)
+                     #centers=np.ndarray(1)
+                     #errors=np.delete(errors,0)
+                     #areas=np.delete(areas,0)
+                     #centers=np.delete(centers,0)
                      for post in ["_fix",""]:
-                       theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
-                       theory_file+="data_R"+query.split('"')[1][2]+"/"
-                       theory_file+="RSIG_THR_RES_NP_"
+                       theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/ZJAverages/"
+                       #theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                       #theory_file+="data_R"+query.split('"')[1][2]+"/"
+                       #theory_file+="RSIG_THR_RES_NP_"
                        theory_file+="d"+("1" if "4" in query.split('"')[1] else "2")+("2" if (not "~isgroomed" in query) else "1")+"-"
-                       theory_file+="x"+("0" if var_number<10 else "")+str(var_number)+"-"
-                       theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                       theory_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                       #theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
                        theory_file+=".dat"
                        if os.path.exists(theory_file): break
                      #print(theory_file)
                      igenbin=0
+                     startReading=False
                      for line in open(theory_file).readlines():
-                       if line.count(".")==5:
+                       if "NLL" in line: startReading=True # New Dijet theory
+                       if "SH-MC@NLO" in line: break # New Dijet theory
+                       if line.count(".")==5 and startReading:
                          igenbin+=1
-                         width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
-                         errors=np.append(errors,float(line.split("\t")[3])*width)
-                         areas=np.append(areas,float(line.split("\t")[2])*width)
-                         centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
-                         assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
-                     mean = metrics.calc_mean_jax(areas, centers)
-                     err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
-                     mean_entries_theory.append([mean,err])
+                         if ibin==igenbin-1:
+                           mean_entries_theory.append([float(line.split("\t")[2]),(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
+                         #width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
+                         #errors=np.append(errors,float(line.split("\t")[3])*width)
+                         #areas=np.append(areas,float(line.split("\t")[2])*width)
+                         #centers=np.append(centers,unfolding_dict['truth_hists'][ibin].edges[igenbin-1]+width/2.)
+                         #assert(float(line.split("\t")[0])==unfolding_dict['truth_hists'][ibin].edges[igenbin-1])
+                     #mean = metrics.calc_mean_jax(areas, centers)
+                     #err = metrics.calc_mean_uncorrelated_error_jax(areas, centers, errors)
+                     #mean_entries_theory.append([mean,err])
+                     igenbin=0
+                     startReading=False
+                     for line in open(theory_file).readlines():
+                       if "SH-MC@NLO" in line: startReading=True # New Dijet theory
+                       if line.count(".")==5 and startReading:
+                         igenbin+=1
+                         if ibin==igenbin-1:
+                           mean_entries_sherpa.append([float(line.split("\t")[2]),(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
+                    elif "Dijet" in query and var_number in [3,4,5,8,9,10]:
+                     angle_output_dir = "%s/%s/%s" % ("/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/trees/unfolded_ak"+query.split('"')[1][2]+"puppi", query.split('"')[-4], query.split('"')[-2])
+                     root_filename = os.path.join(angle_output_dir, "unfolding_result_slim.root")
+                     import uproot
+                     uproot_file = uproot.open(root_filename)
+                     #print(root_filename, query.split('"')[-4], query.split('"')[-2], self.pt_bins_dijet[(0 if "4" in query.split('"')[1] else 2):])
+                     unfolding_dict = unpack_slim_unfolding_root_file_uproot(uproot_file, query.split('"')[-4], query.split('"')[-2], self.pt_bins_dijet[(0 if "4" in query.split('"')[1] else 2):])
+                     for post in ["_fix",""]:
+                       theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/DijetAverages/"
+                       #theory_file="/nfs/dust/cms/user/hinzmann/qganalysis/CMSSW_10_2_17/src/zjet_angularities-master-to_send_to_CMS-thr_vs_exp_cvt"+post+"/to_send_to_CMS/thr_vs_exp_cvt"+post+"/"
+                       #theory_file+="data_R"+query.split('"')[1][2]+"/"
+                       #theory_file+="RSIG_THR_RES_NP_"
+                       theory_file+="d"+("1" if "4" in query.split('"')[1] else "2")+(str(2+2*("forward" in query)) if (not "~isgroomed" in query) else str(1+2*("forward" in query)))+"-"
+                       theory_file+="x"+("0" if var_number<10 else "")+str(var_number)#+"-"
+                       #theory_file+="y"+("0" if ibin<9 else "")+str(ibin+1)
+                       theory_file+=".dat"
+                       if os.path.exists(theory_file): break
+                     #print(theory_file)
+                     igenbin=0
+                     startReading=False
+                     for line in open(theory_file).readlines():
+                       if "NLL" in line: startReading=True # New Dijet theory
+                       if "SH-MC@NLO" in line: break # New Dijet theory
+                       if line.count(".")==5 and startReading:
+                         igenbin+=1
+                         if ibin==igenbin-1:
+                           mean_entries_theory.append([float(line.split("\t")[2]),(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
+                     igenbin=0
+                     startReading=False
+                     for line in open(theory_file).readlines():
+                       if "SH-MC@NLO" in line: startReading=True # New Dijet theory
+                       if line.count(".")==5 and startReading:
+                         igenbin+=1
+                         if ibin==igenbin-1:
+                           mean_entries_sherpa.append([float(line.split("\t")[2]),(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
                     else:
-                     mean_entries_theory.append([-999,0])
+                     mean_entries_theory.append([-999,1e-10])
+                     mean_entries_sherpa.append([-999,1e-10])
 
                     rms_entries_mc.append([results['rms_truth'].item(), results['rms_err_truth'].item()])
                     rms_entries_alt_mc.append([results['rms_alt_truth'].item(), results['rms_err_alt_truth'].item()])
@@ -1322,6 +1663,12 @@ class SummaryPlotter(object):
                 hist_mean_alt_mc = self._make_hist_from_values(mean_entries_alt_mc, bin_names=bin_names)
                 self._style_alt_mc_hist(hist_mean_alt_mc)
                 hists.append(hist_mean_alt_mc)
+
+                _check_values(mean_entries_sherpa, "mean_entries_sherpa")
+                hist_mean_sherpa = self._make_hist_from_values(mean_entries_sherpa, bin_names=bin_names)
+                self._style_sherpa_hist(hist_mean_sherpa)
+                if add_theory:
+                  hists.append(hist_mean_sherpa)
 
                 _check_values(mean_entries_theory, "mean_entries_theory")
                 hist_mean_theory = self._make_hist_from_values(mean_entries_theory, bin_names=bin_names)
@@ -1738,7 +2085,8 @@ class SummaryPlotter(object):
             this_ratio_hists = []
             for g_hist, q_hist in zip(this_gluon_hists, this_quark_hists):
                 ratio_hist = g_hist.Clone(g_hist.GetName() + "_qg_ratio")
-                ratio_hist.Divide(q_hist)
+                if q_hist.GetBinContent(1)>0:
+                  ratio_hist.Divide(q_hist)
                 this_ratio_hists.append(ratio_hist)
                 # no need to worry about styling, carried over from originals
             mean_hists.append(this_ratio_hists)
@@ -1749,7 +2097,8 @@ class SummaryPlotter(object):
             this_ratio_hists = []
             for g_hist, q_hist in zip(this_gluon_hists, this_quark_hists):
                 ratio_hist = g_hist.Clone(g_hist.GetName() + "_qg_ratio")
-                ratio_hist.Divide(q_hist)
+                if q_hist.GetBinContent(1)>0:
+                  ratio_hist.Divide(q_hist)
                 this_ratio_hists.append(ratio_hist)
                 # no need to worry about styling, carried over from originals
             rms_hists.append(this_ratio_hists)
@@ -1773,7 +2122,8 @@ class SummaryPlotter(object):
                 if ind == data_index:
                     continue
                 h_new = h.Clone(h.GetName() + "_vs_data")
-                h_new.Divide(ref_hist)
+                if h_new.GetBinContent(1)>0:
+                  h_new.Divide(ref_hist)
                 this_group.append(h_new)
             new_hists.append(this_group)
         return new_hists
@@ -1785,7 +2135,7 @@ class SummaryPlotter(object):
         """
         print("plotting q_vs_g_bins_summary")
         mean_q_vs_g_ratio_hists, rms_q_vs_g_ratio_hists = self.construct_q_vs_g_hist_groups(gluon_selections=gluon_selections,
-                                                                                            quark_selections=quark_selections, add_theory=False)
+                                                                                            quark_selections=quark_selections, add_theory=True)
         mean_q_vs_g_data_vs_mc_ratio_hists = self.construct_q_vs_g_mc_vs_data_hist_groups(mean_q_vs_g_ratio_hists)
         self.plot_two_row_bins_summary(selection_groups=quark_selections[0:1]+gluon_selections[1:], # merge the two to get correct identification of doing dijet and Z+J e.g. for lumi
                                        upper_row_hist_groups=mean_q_vs_g_ratio_hists,
@@ -1807,7 +2157,7 @@ class SummaryPlotter(object):
                                        label_every_bin=False,
                                        lower_row_is_ratio=True,
                                        ylims_upper=ylims_upper,
-                                       ylims_lower=ylims_lower, add_theory=False)
+                                       ylims_lower=ylims_lower, add_theory=True)
 
 
     def plot_q_g_mean_bins_summary(self, quark_selections, gluon_selections, output_file, legend_header=None, ylims=None):
@@ -1860,6 +2210,7 @@ class SummaryPlotter(object):
             if data_is_denominator:
                 h_new.Divide(data_hist)
             else:
+              if h.GetBinContent(1)>0:
                 h_new.Divide(data_hist, h)
             new_hists.append(h_new)
         return new_hists
@@ -2079,7 +2430,38 @@ class SummaryPlotter(object):
                 draw_opt = "E1 X0"
                 if ind != 0:
                     draw_opt += " SAME"
-                hist.Draw(draw_opt)
+                if hist.GetFillStyle()==3395:
+                    hist_upper=hist.Clone(hist.GetTitle()+"upper")
+                    hists_extra+=[hist_upper]
+                    for b in range(hist.GetNbinsX()):
+                      if hist.GetBinContent(b+1)>0:
+                       hist_upper.SetBinContent(b+1,hist.GetBinContent(b+1)+hist.GetBinError(b+1)*(1 if hist.GetBinError(b+1)>1e-10 else 1e100))
+                       hist_upper.SetBinError(b+1,0)
+                    hist_upper.SetFillStyle(3395)
+                    hist_upper.SetFillColor(ROOT.kRed-9)
+                    hist_upper.SetLineColor(0)
+                    hist_lower=hist.Clone(hist.GetTitle()+"lower")
+                    hists_extra+=[hist_lower]
+                    for b in range(hist.GetNbinsX()):
+                      if hist.GetBinContent(b+1)>0:
+                       hist_lower.SetBinContent(b+1,hist.GetBinContent(b+1)-hist.GetBinError(b+1)*(1 if hist.GetBinError(b+1)>1e-10 else 1e100))
+                       hist_lower.SetBinError(b+1,0)
+                    hist_lower.SetFillStyle(1001)
+                    hist_lower.SetFillColor(10)
+                    hist_lower.SetLineColor(0)
+                    for b in range(hist.GetNbinsX()):
+                       hist.SetBinError(b+1,hist.GetBinError(b+1)*(1e-100 if hist.GetBinError(b+1)>1e-10 else 1))
+                    hist.Draw(draw_opt)
+                    hist_upper.Draw("F SAME")
+                    hist_lower.Draw("F SAME")
+                    hist.Draw(draw_opt + " SAME")
+                    hist.Draw("AXIS SAME")
+                else:
+                    hist.Draw(draw_opt)
+                    hist.Draw("E SAME")
+            draw_opt = "E1 X0"
+            for ind, hist in enumerate(upper_hist_group[::-1][1:]):
+                hist.Draw(draw_opt + " SAME")
                 hist.Draw("E SAME")
 
             upper_draw_hist = upper_hist_group[-1]
@@ -2271,7 +2653,7 @@ class SummaryPlotter(object):
 
         n_leg_entries = len(self.other_samples) # other samples
         if not self.only_yoda_data:
-            n_leg_entries += 2  # mc, alt mc
+            n_leg_entries += 4  # mc, alt mc, sherpa, theory
         if self.has_data:
             n_leg_entries += 1
         if lower_row_is_ratio:
@@ -2279,7 +2661,7 @@ class SummaryPlotter(object):
 
         # to figure out legend height, account for any #splitline or \n in labels
         multiline_extra = 2.5
-        for label in [self.mc_label, self.alt_mc_label]:
+        for label in [self.mc_label_short, self.alt_mc_label]:
             if '#splitline' in label or '\n' in label:
                 n_leg_entries += multiline_extra
         for sample in self.other_samples:
@@ -2301,6 +2683,8 @@ class SummaryPlotter(object):
         self._style_alt_mc_hist(dummy_alt_mc)
         dummy_theory = dummy_gr.Clone()
         self._style_theory_hist(dummy_theory)
+        dummy_sherpa = dummy_gr.Clone()
+        self._style_sherpa_hist(dummy_sherpa)
 
         def _add_entry(obj, label, option):
             parts = label.split("\n")
@@ -2323,9 +2707,10 @@ class SummaryPlotter(object):
             if lower_row_is_ratio:
                 _add_entry(data_total_ratio, "Data uncertainty", "F")
         if not self.only_yoda_data:
-            _add_entry(dummy_mc, self.mc_label, "LEP")
+            _add_entry(dummy_mc, self.mc_label_short, "LEP")
             _add_entry(dummy_alt_mc, self.alt_mc_label, "LEP")
             if add_theory:
+              _add_entry(dummy_sherpa, "Sherpa NLO+jet", "LEP")
               _add_entry(dummy_theory, "NLO+NLL'+NP", "FL")
 
         dummy_other = []  # keep reference
