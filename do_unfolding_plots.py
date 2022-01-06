@@ -585,9 +585,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
                   theory_hist_bin.SetBinError(igenbin, 1e-100)
                   theory_hist_bin_error.SetBinContent(igenbin, float(line.split("\t")[2]))
                   theory_hist_bin_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
-                  theory_hist_bin_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                  theory_hist_bin_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[4]))
                   theory_hist_bin_upper.SetBinError(igenbin, 0)
-                  theory_hist_bin_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                  theory_hist_bin_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[3]))
                   theory_hist_bin_lower.SetBinError(igenbin, 0)
               assert(igenbin==theory_hist_bin.GetNbinsX())
             
@@ -689,6 +689,9 @@ class GenPtBinnedPlotter(BinnedPlotter):
                 ('Dijet_central_groomed', 'jet_LHA', 'AK4', 3),
                 ]:
                 plot.is_supplementary = True
+            #### MAKE EVERYTHING SUPPPLEMENTARY
+            plot.is_supplementary = True
+            ####
             self._modify_plot_paper(plot)
 
             # disable adding objects to legend & drawing - we'll do it manually

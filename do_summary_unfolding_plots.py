@@ -297,9 +297,9 @@ class SummaryPlotter(object):
                       dijet_central_hist_theory.SetBinError(igenbin, 1e-100)
                       dijet_central_hist_theory_error.SetBinContent(igenbin, float(line.split("\t")[2]))
                       dijet_central_hist_theory_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
-                      dijet_central_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                      dijet_central_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[4]))
                       dijet_central_hist_theory_upper.SetBinError(igenbin, 0)
-                      dijet_central_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                      dijet_central_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[3]))
                       dijet_central_hist_theory_lower.SetBinError(igenbin, 0)
 
                   for post in ["_fix",""]:
@@ -405,9 +405,9 @@ class SummaryPlotter(object):
                       dijet_forward_hist_theory.SetBinError(igenbin, 1e-100)
                       dijet_forward_hist_theory_error.SetBinContent(igenbin, float(line.split("\t")[2]))
                       dijet_forward_hist_theory_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
-                      dijet_forward_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                      dijet_forward_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[4]))
                       dijet_forward_hist_theory_upper.SetBinError(igenbin, 0)
-                      dijet_forward_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                      dijet_forward_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[3]))
                       dijet_forward_hist_theory_lower.SetBinError(igenbin, 0)
 
                   for post in ["_fix",""]:
@@ -516,9 +516,9 @@ class SummaryPlotter(object):
                       zpj_hist_theory.SetBinError(igenbin, 1e-100)
                       zpj_hist_theory_error.SetBinContent(igenbin, float(line.split("\t")[2]))
                       zpj_hist_theory_error.SetBinError(igenbin, (float(line.split("\t")[3])+float(line.split("\t")[4]))/2.)
-                      zpj_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[3]))
+                      zpj_hist_theory_upper.SetBinContent(igenbin, float(line.split("\t")[2])+float(line.split("\t")[4]))
                       zpj_hist_theory_upper.SetBinError(igenbin, 0)
-                      zpj_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[4]))
+                      zpj_hist_theory_lower.SetBinContent(igenbin, float(line.split("\t")[2])-float(line.split("\t")[3]))
                       zpj_hist_theory_lower.SetBinError(igenbin, 0)
                       #width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
                       #errors=np.append(errors,float(line.split("\t")[3])*width)
@@ -1554,7 +1554,7 @@ class SummaryPlotter(object):
                        theory_file+=".dat"
                        if os.path.exists(theory_file): break
                      #print(theory_file)
-                     igenbin=0
+                     igenbin=min_pt_bin_ind
                      startReading=False
                      for line in open(theory_file).readlines():
                        if "NLL" in line: startReading=True # New Dijet theory
@@ -1562,7 +1562,7 @@ class SummaryPlotter(object):
                        if line.count(".")==5 and startReading:
                          igenbin+=1
                          if ibin==igenbin-1:
-                           mean_entries_theory.append([float(line.split("\t")[2]),(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
+                           mean_entries_theory.append([float(line.split("\t")[2])+(float(line.split("\t")[4])-float(line.split("\t")[3]))/2.,(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
                          #width=unfolding_dict['truth_hists'][ibin].edges[igenbin]-unfolding_dict['truth_hists'][ibin].edges[igenbin-1]
                          #errors=np.append(errors,float(line.split("\t")[3])*width)
                          #areas=np.append(areas,float(line.split("\t")[2])*width)
@@ -1597,7 +1597,7 @@ class SummaryPlotter(object):
                        theory_file+=".dat"
                        if os.path.exists(theory_file): break
                      #print(theory_file)
-                     igenbin=0
+                     igenbin=min_pt_bin_ind
                      startReading=False
                      for line in open(theory_file).readlines():
                        if "NLL" in line: startReading=True # New Dijet theory
@@ -1605,7 +1605,7 @@ class SummaryPlotter(object):
                        if line.count(".")==5 and startReading:
                          igenbin+=1
                          if ibin==igenbin-1:
-                           mean_entries_theory.append([float(line.split("\t")[2]),(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
+                           mean_entries_theory.append([float(line.split("\t")[2])+(float(line.split("\t")[4])-float(line.split("\t")[3]))/2.,(float(line.split("\t")[3])+float(line.split("\t")[4]))/2.])
                      igenbin=0
                      startReading=False
                      for line in open(theory_file).readlines():
@@ -2835,18 +2835,24 @@ class SummaryPlotter(object):
         cms_latex.SetTextAlign(ROOT.kHAlignLeft + ROOT.kVAlignBottom)
         cms_latex.SetTextFont(42)
         cms_latex.SetTextSize(0.045)
-        start_x = left_margin + (pad_width*pad_left_margin) + 0.1
+        start_x = left_margin + (pad_width*pad_left_margin) + 0.05
         # # start_x = 100
         if self.is_preliminary:
             if self.has_data:
                 cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Preliminary}")
             else:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Preliminary Simulation}")
+                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation Preliminary}")
         else:
-            if self.has_data:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "")
+            if self.is_supplementary:
+                if self.has_data:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Supplementary}")
+                else:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation Supplementary}")
             else:
-                cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation}")
+                if self.has_data:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "")
+                else:
+                    cms_latex.DrawLatexNDC(start_x, latex_height, "#font[52]{ Simulation}")
         cms_latex.SetTextAlign(ROOT.kHAlignRight + ROOT.kVAlignBottom)
         # # Get the lumi text aligned to right edge of axes
         # # i.e. 1-pad_right_margin, but remember to scale by pad width
