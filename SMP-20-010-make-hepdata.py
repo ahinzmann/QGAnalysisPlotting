@@ -79,7 +79,7 @@ submission = Submission()
 submission.read_abstract("abstract.txt")
 submission.add_link("Webpage with all figures and tables", "https://cms-results.web.cern.ch/cms-results/public-results/publications/SMP-20-010/")
 submission.add_link("arXiv", "http://arxiv.org/abs/arXiv:2109.03340")
-submission.add_record_id(123, "inspire")
+submission.add_record_id(1920187, "inspire")
 
 paper_plots={}
 paper_plots["multiplicity","ungroomed","120 < PT < 150 GeV","Z+jet","AK4",None]="Figure 6 (upper left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_puppiMultiplicity/ZPlusJets/ak4/unfolded_ZPlusJets_jet_puppiMultiplicity_alt_truth_bin_3_divBinWidth_paper.pdf"
@@ -90,12 +90,12 @@ paper_plots["thrust","ungroomed","120 < PT < 150 GeV","Z+jet","AK4",None]="Figur
 paper_plots["thrust","ungroomed","120 < PT < 150 GeV","central dijet","AK4",None]="Figure 7 (upper right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_thrust/Dijet_central/ak4/unfolded_Dijet_central_jet_thrust_alt_truth_bin_3_divBinWidth_paper.pdf"
 paper_plots["width","ungroomed","120 < PT < 150 GeV","Z+jet","AK4",None]="Figure 7 (lower left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_width/ZPlusJets/ak4/unfolded_ZPlusJets_jet_width_alt_truth_bin_3_divBinWidth_paper.pdf"
 paper_plots["width","ungroomed","120 < PT < 150 GeV","central dijet","AK4",None]="Figure 7 (lower right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_width/Dijet_central/ak4/unfolded_Dijet_central_jet_width_alt_truth_bin_3_divBinWidth_paper.pdf"
-paper_plots["LHA","ungroomed","120 < PT < 150 GeV","Z+jet","AK4",None]="Figure 8 (left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/ZPlusJets/ak4/unfolded_ZPlusJets_jet_LHA_alt_truth_bin_3_divBinWidth_paper.pdf"
-paper_plots["LHA","ungroomed","120 < PT < 150 GeV","central dijet","AK4",None]="Figure 8 (right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/Dijet_central/ak4/unfolded_Dijet_central_jet_LHA_alt_truth_bin_3_divBinWidth_paper.pdf"
+paper_plots["LHA","ungroomed","120 < PT < 150 GeV","Z+jet","AK4",None]="Figure 8 (left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/ZPlusJets/ak4/unfolded_ZPlusJets_jet_LHA_alt_truth_bin_3_divBinWidth_paper_ak4.pdf"
+paper_plots["LHA","ungroomed","120 < PT < 150 GeV","central dijet","AK4",None]="Figure 8 (right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/Dijet_central/ak4/unfolded_Dijet_central_jet_LHA_alt_truth_bin_3_divBinWidth_paper_ak4.pdf"
 paper_plots["LHA","ungroomed","408 < PT < 1500 GeV","Z+jet","AK4",None]="Figure 9 (upper left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/ZPlusJets/ak4/unfolded_ZPlusJets_jet_LHA_alt_truth_bin_8_divBinWidth_paper.pdf"
 paper_plots["LHA","ungroomed","1000 < PT < 4000 GeV","central dijet","AK4",None]="Figure 9 (upper right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/Dijet_central/ak4/unfolded_Dijet_central_jet_LHA_alt_truth_bin_12_divBinWidth_paper.pdf"
-paper_plots["LHA","ungroomed","120 < PT < 150 GeV","Z+jet","AK8",None]="Figure 9 (lower left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/ZPlusJets/ak8/unfolded_ZPlusJets_jet_LHA_alt_truth_bin_3_divBinWidth_paper.pdf"
-paper_plots["LHA","ungroomed","120 < PT < 150 GeV","central dijet","AK8",None]="Figure 9 (lower right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/Dijet_central/ak8/unfolded_Dijet_central_jet_LHA_alt_truth_bin_3_divBinWidth_paper.pdf"
+paper_plots["LHA","ungroomed","120 < PT < 150 GeV","Z+jet","AK8",None]="Figure 9 (lower left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/ZPlusJets/ak8/unfolded_ZPlusJets_jet_LHA_alt_truth_bin_3_divBinWidth_paper_ak8.pdf"
+paper_plots["LHA","ungroomed","120 < PT < 150 GeV","central dijet","AK8",None]="Figure 9 (lower right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/Dijet_central/ak8/unfolded_Dijet_central_jet_LHA_alt_truth_bin_3_divBinWidth_paper_ak8.pdf"
 paper_plots["LHA (charged-only)","ungroomed","120 < PT < 150 GeV","Z+jet","AK4",None]="Figure 10 (upper left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA_charged/ZPlusJets/ak4/unfolded_ZPlusJets_jet_LHA_charged_alt_truth_bin_3_divBinWidth_paper.pdf"
 paper_plots["LHA (charged-only)","ungroomed","120 < PT < 150 GeV","central dijet","AK4",None]="Figure 10 (upper right)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA_charged/Dijet_central/ak4/unfolded_Dijet_central_jet_LHA_charged_alt_truth_bin_3_divBinWidth_paper.pdf"
 paper_plots["LHA","groomed","120 < PT < 150 GeV","Z+jet","AK4",None]="Figure 10 (lower left)","SMP-20-010/Figures/unfolding_plots_data_unreg_differential/jet_LHA/ZPlusJets/ak4/unfolded_ZPlusJets_groomed_jet_LHA_alt_truth_bin_3_divBinWidth_paper.pdf"
@@ -276,10 +276,13 @@ for plot in plots:
       y.values = data[:,3]
     else:
       y.values = np.array([])
+      i=0
       for d in data:
        for dd in d:
         y.values.extend([float(dd)])
+        i+=1
       round_value_to_decimals(y.values)
+      #print(y.values)
     #print(x.values)
     #print(y.values)
     y.add_qualifier("observable", plot[0])
@@ -313,35 +316,37 @@ tables_additional.sort(key=get_name)
 for table in tables_paper+tables_additional:
     submission.add_table(table)
 
-i=1
-print("std::map<int,int> hepdata_index {", end='')
-for table in tables_paper+tables_additional:
-  if table.name in table_index.keys():
-    print("{"+str(table_index[table.name])+","+str(i)+"},", end='')
-  i+=1
-print("};")
-    
-i=1
-for table in tables_paper+tables_additional:
-  if table.name in table_index2.keys():
-    print("# BEGIN PLOT /CMS_2018_PAS_SMP_18_QGX_ZPJ/d"+("0"+str(i) if i<10 else str(i))+"-x01-y01")
-    print("Title="+table_index2[table.name][4]+" jets, "+table_index2[table.name][3]+" region, "+table_index2[table.name][2].replace("PT","$p_{T}^{\\text{jet}}$")).replace("< $p_{T}^{\text{jet}}$ <","$<p_{T}^{\text{jet}}<$")
-    print("XLabel="+("groomed " if table_index2[table.name][1]=="groomed" else "")+table_index2[table.name][0])
-    print("YLabel=$\\frac{1}{\mathrm d N / \mathrm d p_{T}}\\frac{\mathrm d^{2}N}{\mathrm d p_{T}~\mathrm d \lambda}$")
-    print("LeftMargin=1.7")
-    print("XMin=0.0")
-    print("XMax="+("150." if "multiplicity" in table_index2[table.name][0] else "1.0"))
-    print("LogY=0")
-    print("XTwosidedTicks=1")
-    print("YTwosidedTicks=1")
-    print("NormalizeToIntegral=1")
-    print("RatioPlotSameStyle=1")
-    print("LegendXPos=0.5")
-    print("# END PLOT")
-    print("")
-  i+=1
+### Print map from HepData index to plot names
+#i=1
+#print("std::map<int,int> hepdata_index {", end='')
+#for table in tables_paper+tables_additional:
+#  if table.name in table_index.keys():
+#    print("{"+str(table_index[table.name])+","+str(i)+"},", end='')
+#  i+=1
+# print("};")
+
+### Print Plot file    
+#i=1
+#for table in tables_paper+tables_additional:
+#  if table.name in table_index2.keys():
+#    print("# BEGIN PLOT /CMS_2018_PAS_SMP_18_QGX_ZPJ/d"+("0"+str(i) if i<10 else str(i))+"-x01-y01")
+#    print("Title="+table_index2[table.name][4]+" jets, "+table_index2[table.name][3]+" region, "+table_index2[table.name][2].replace("PT","$p_{T}^{\\text{jet}}$")).replace("< $p_{T}^{\text{jet}}$ <","$<p_{T}^{\text{jet}}<$")
+#    print("XLabel="+("groomed " if table_index2[table.name][1]=="groomed" else "")+table_index2[table.name][0])
+#    print("YLabel=$\\frac{1}{\mathrm d N / \mathrm d p_{T}}\\frac{\mathrm d^{2}N}{\mathrm d p_{T}~\mathrm d \lambda}$")
+#    print("LeftMargin=1.7")
+#    print("XMin=0.0")
+#    print("XMax="+("150." if "multiplicity" in table_index2[table.name][0] else "1.0"))
+#    print("LogY=0")
+#    print("XTwosidedTicks=1")
+#    print("YTwosidedTicks=1")
+#    print("NormalizeToIntegral=1")
+#    print("RatioPlotSameStyle=1")
+#    print("LegendXPos=0.5")
+#    print("# END PLOT")
+#    print("")
+#  i+=1
     
 for table in submission.tables:
   table.keywords["cmenergies"] = [13000]
 outdir = "output"
-submission.create_files(outdir)
+submission.create_files(outdir, remove_old=True)
