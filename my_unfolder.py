@@ -1797,7 +1797,7 @@ class MyUnfolder(ROOT.MyTUnfoldDensity):
             val = self.get_output().GetBinContent(ix)
             if val < 0:
                 err = self.get_output().GetBinError(ix)
-                msg = "Unfolded bin %d = %s has value %f ± %f" % (ix, self.binning_handler.global_bin_to_physical_bin(ix, 'generator'), val, err)
+                msg = "Unfolded bin %d = %s has value %f +- %f" % (ix, self.binning_handler.global_bin_to_physical_bin(ix, 'generator'), val, err)
                 print(cu.pcolors.OKCYAN + msg + cu.pcolors.ENDC)
 
     def _post_process(self):
